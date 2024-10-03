@@ -1,0 +1,98 @@
+# Builds Tcl, Tk, Starkit and Tcl/Tk packages, which do not depend on 3rd party libraries.
+# On Windows all libraries can be compiled with MSys/MinGW.
+
+# Setup LibName         ZipFile                        BuildFile           BuildOptions
+
+# Tcl/Tk, stubs and manual.
+Setup Tcl               Tcl-[GetTclVersion].7z         Tcl.bawt
+Setup TclStubs          Tcl-[GetTclVersion].7z         TclStubs.bawt
+Setup Tk                Tk-[GetTkVersion].7z           Tk.bawt
+Setup TkStubs           Tk-[GetTkVersion].7z           TkStubs.bawt
+Setup TclTkManual       TclTkManual.7z                 TclTkManual.bawt
+
+# Compiled Tcl packages.
+Setup critcl            critcl-3.2.7z                  critcl.bawt
+Setup expect            expect-5.45.4.7z               expect.bawt
+Setup DiffUtil          DiffUtil-0.4.2.7z              DiffUtil.bawt
+Setup memchan           memchan-2.3.7z                 memchan.bawt
+Setup Mpexpr            Mpexpr-1.2.7z                  Mpexpr.bawt
+Setup nacl              nacl-1.1.7z                    nacl.bawt
+Setup nsf               nsf-2.4.0.7z                   nsf.bawt
+Setup oratcl            oratcl-4.6.7z                  oratcl.bawt
+Setup parse_args        parse_args-0.3.3.7z            parse_args.bawt
+Setup rl_json           rl_json-0.11.5.7z              rl_json.bawt
+Setup tbcload           tbcload-1.7.1.7z               tbcload.bawt
+Setup tclcompiler       tclcompiler-1.7.3.7z           tclcompiler.bawt
+Setup tclcsv            tclcsv-2.3.7z                  tclcsv.bawt
+Setup tclparser         tclparser-1.8.7z               tclparser.bawt
+Setup tclvfs            tclvfs-1.4.2.7z                tclvfs.bawt
+Setup tclx              tclx-8.4.4.7z                  tclx.bawt
+Setup tdom              tdom-0.9.3.7z                  tdom.bawt
+Setup trofs             trofs-0.4.9.7z                 trofs.bawt
+Setup tserialport       tserialport-1.1.7z             tserialport.bawt    MaxParallel=Windows-gcc:1
+Setup udp               udp-1.0.11.7z                  udp.bawt
+Setup vectcl            vectcl-0.2.7z                  vectcl.bawt
+
+# Compiled Tk packages.
+Setup Canvas3d          Canvas3d-1.2.2.7z              Canvas3d.bawt
+Setup Img               Img-[GetImgVersion].7z         Img.bawt
+Setup imgtools          imgtools-0.3.7z                imgtools.bawt
+Setup itk               itk-4.1.0.7z                   itk.bawt
+Setup iwidgets          iwidgets-4.1.1.7z              iwidgets.bawt
+Setup photoresize       photoresize-0.2.7z             photoresize.bawt
+Setup poImg             poImg-2.0.2.7z                 poImg.bawt
+Setup Snack             Snack-2.2.11.7z                Snack.bawt
+Setup Tix               Tix-8.4.3.7z                   Tix.bawt            NoDarwin
+Setup Tkhtml            Tkhtml-3.0.1.7z                Tkhtml.bawt
+Setup tkpath            tkpath-0.3.3.7z                tkpath.bawt         NoDarwin
+Setup tksvg             tksvg-0.12.7z                  tksvg.bawt
+Setup Tktable           Tktable-2.11.7z                Tktable.bawt
+Setup treectrl          treectrl-2.4.1.7z              treectrl.bawt
+
+# Compiled Tcl and Tk packages. Windows only.
+Setup iocp              iocp-1.1.0.7z                  iocp.bawt
+Setup rbc               rbc-0.2.7z                     rbc.bawt
+Setup shellicon         shellicon-0.1.7z               shellicon.bawt
+Setup twapi             twapi-4.7.2.7z                 twapi.bawt
+Setup winhelp           winhelp-1.1.7z                 winhelp.bawt
+
+# Compiled Tcl packages. Darwin only.
+Setup Tcladdressbook    Tcladdressbook-1.2.4.7z        Tcladdressbook.bawt
+Setup Tclapplescript    Tclapplescript-2.2.7z          Tclapplescript.bawt
+Setup tclAE             tclAE-2.0.7.7z                 tclAE.bawt
+
+# Pure Tcl/Tk packages.
+Setup apave             apave-3.4.8.7z                 apave.bawt
+Setup awthemes          awthemes-10.4.0.7z             awthemes.bawt
+Setup BWidget           BWidget-1.9.16.7z              BWidget.bawt
+Setup cawt              cawt-2.9.2.7z                  cawt.bawt
+Setup materialicons     materialicons-0.2.7z           materialicons.bawt
+Setup mentry            mentry-3.16.7z                 mentry.bawt
+Setup mqtt              mqtt-3.1.7z                    mqtt.bawt
+Setup ooxml             ooxml-1.6.1.7z                 ooxml.bawt
+Setup pdf4tcl           pdf4tcl-0.9.4.7z               pdf4tcl.bawt
+Setup pgintcl           pgintcl-3.5.1.7z               pgintcl.bawt
+Setup puppyicons        puppyicons-0.1.7z              puppyicons.bawt
+Setup ruff              ruff-2.3.0.7z                  ruff.bawt
+Setup scrollutil        scrollutil-1.17.7z             scrollutil.bawt
+Setup shtmlview         shtmlview-1.0.0.7z             shtmlview.bawt
+Setup tablelist         tablelist-6.20.7z              tablelist.bawt
+Setup tclargp           tclargp-0.2.7z                 tclargp.bawt
+Setup tclfpdf           tclfpdf-1.5.7z                 tclfpdf.bawt
+Setup tcllib            tcllib-1.21.7z                 tcllib.bawt
+Setup tclws             tclws-3.4.0.7z                 tclws.bawt
+Setup tkcon             tkcon-2.7.10.7z                tkcon.bawt
+Setup tklib             tklib-0.7.7z                   tklib.bawt
+Setup ukaz              ukaz-2.0a3.7z                  ukaz.bawt
+Setup wcb               wcb-3.8.7z                     wcb.bawt
+Setup windetect         windetect-1.0.0.7z             windetect.bawt
+Setup tkwintrack        tkwintrack-2.0.1.7z            tkwintrack.bawt
+
+# Tclkits.
+Setup Tclkit            Tclkit.7z                      Tclkit.bawt
+
+# Tcl programs wrapped as starpacks.
+Setup gorilla           gorilla-1.6.0.7z               gorilla.bawt
+Setup tclssg            tclssg-2.2.1.7z                tclssg.bawt
+Setup tkchat            tkchat-1.482.7z                tkchat.bawt
+Setup tksqlite          tksqlite-0.5.13.7z             tksqlite.bawt

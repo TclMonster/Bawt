@@ -1,0 +1,15 @@
+# Builds all libraries supported by BAWT. 
+# This setup is for testing purposes only.
+
+Include "Tools.bawt"
+Include "BasicLibs.bawt"
+
+Include "Tcl_Basic.bawt"
+Include "Tcl_Distribution.bawt"
+Include "Tcl3D.bawt"
+
+Include "OSG_Basic.bawt"
+Include "OSG_Distribution.bawt"
+
+Include "MiscLibs.bawt"
+Include "WinTools.bawt"

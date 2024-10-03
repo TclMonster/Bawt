@@ -1,0 +1,9 @@
+# Builds VulkanSceneGraph with basic plugin libraries.
+
+Include "Tools.bawt"
+
+# Setup LibName         ZipFile                    BuildFile               BuildOptions
+
+Setup VulkanRT          VulkanRT-1.3.211.0.7z      VulkanRT.bawt
+Setup VulkanSDK         VulkanSDK-1.3.211.0.7z     VulkanSDK.bawt
+Setup VulkanSceneGraph  VulkanSceneGraph-1.0.2.7z  VulkanSceneGraph.bawt   -DBUILD_SHARED_LIBS=OFF

@@ -1,0 +1,13 @@
+# Builds the extended version of Tcl3D, which depends on
+# 3rd party libraries (OpenSceneGraph, SDL, FTGL).
+
+Include "Tools.bawt"
+Include "BasicLibs.bawt"
+Include "Tcl_Extended.bawt"
+Include "OSG_Basic.bawt"
+
+# Setup LibName  ZipFile         BuildFile       BuildOptions
+
+Setup glfw       glfw-3.3.2.7z   glfw.bawt  
+Setup FTGL       FTGL-2.1.3.7z   FTGL.bawt       NoDarwin
+Setup tcl3dFull  tcl3d-0.9.5.7z  tcl3dFull.bawt          

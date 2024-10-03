@@ -1,0 +1,42 @@
+# OpenSceneGraph 3.0.1 cannot be compiled with current 3rd party libraries.
+# This Setup file defines a set of libraries compatible with version 3.0.1.
+# It has been successfully compiled with VisualStudio 2013-2019 and gcc.
+
+# Setup libName               zipFile                           scriptFile              buildTypes
+
+# Tools needed for compilation of libraries.
+Setup CMake                   CMake-3.14.5.7z                   CMake.bawt      
+
+# The following libraries can be compiled on Linux, but for OpenSceneGraph
+# we use the libraries installed by the Linux distribution.
+
+# Basic library needed by most other libraries.
+Setup ZLib                    ZLib-1.2.8.7z                     ZLib.bawt               NoLinux
+Setup xz                      xz-5.2.5.7z                       xz.bawt                 NoLinux NoDarwin
+
+# Image libraries needed by OpenSceneGraph.
+Setup giflib                  giflib-4.2.3.7z                   giflib.bawt             NoLinux
+Setup JPEG                    JPEG-9.a.7z                       JPEG.bawt               NoLinux
+Setup PNG                     PNG-1.6.17.7z                     PNG.bawt                NoLinux
+Setup TIFF                    TIFF-4.0.3.7z                     TIFF.bawt               NoLinux
+
+Setup freeglut                freeglut-3.0.0.7z                 freeglut.bawt           NoLinux
+Setup Freetype                Freetype-2.7.7z                   Freetype.bawt           NoLinux
+
+if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2008 } {
+    Setup SDL                 SDL-2.0.4.7z                      SDL.bawt                MaxParallel=Windows-gcc:1
+} else {
+    Setup SDL                 SDL-2.0.8.7z                      SDL.bawt                MaxParallel=Windows-gcc:1
+}
+
+Setup libressl                libressl-2.6.4.7z                 libressl.bawt
+Setup curl                    curl-7.54.1.7z                    curl.bawt
+
+# OpenSceneGraph library and data.
+Setup OpenSceneGraph          OpenSceneGraph-3.0.1.7z           OpenSceneGraph.bawt     MaxParallel=Windows-gcc:1
+Setup OpenSceneGraphData      OpenSceneGraphData-3.0.1.7z       OpenSceneGraphData.bawt 
+
+# OpenSceneGraph distribution as InnoSetup installer.
+Setup InnoSetup               InnoSetup-6.2.0.7z                InnoSetup.bawt
+Setup Redistributables        Redistributables.7z               Redistributables.bawt
+Setup SetupOsg                SetupOsg.7z                       SetupOsg.bawt

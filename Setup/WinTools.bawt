@@ -1,0 +1,7 @@
+# Builds miscellaneous tools for Windows.
+
+# Setup LibName          ZipFile                BuildFile       BuildOptions
+Setup Blender            Blender-3.0.0.7z       Blender.bawt
+Setup DirectXTex         DirectXTex-2021_11.7z  DirectXTex.bawt
+Setup Doxygen            Doxygen-1.8.15.7z      Doxygen.bawt
+Setup Vim                Vim-9.0.0.7z           Vim.bawt

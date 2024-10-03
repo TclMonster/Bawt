@@ -1,0 +1,29 @@
+# Builds OpenSceneGraph with extended plugin libraries, as
+# well as libraries depending on OpenSceneGraph like osgEarth.
+
+Include "Tools.bawt"
+Include "BasicLibs.bawt"
+Include "OSG_Basic.bawt"
+
+# Setup LibName ZipFile          BuildFile      BuildOptions
+
+# Extended OpenSceneGraph 3rd party libraries.
+Setup Cal3D     Cal3D-0.120.7z   Cal3D.bawt     
+if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2013 } {
+    Setup gdal  gdal-2.2.0.7z    gdal.bawt      ; # Possible deadlock: MaxParallel=Windows-gcc:1
+    Setup geos  geos-3.6.3.7z    geos.bawt      ; # Possible deadlock: MaxParallel=Windows-gcc:1
+} else {
+    Setup gdal  gdal-2.4.4.7z    gdal.bawt      ; # Possible deadlock: MaxParallel=Windows-gcc:1
+    Setup geos  geos-3.7.2.7z    geos.bawt      ; # Possible deadlock: MaxParallel=Windows-gcc:1
+}
+Setup GLEW      GLEW-2.2.0.7z    GLEW.bawt      
+Setup Gl2ps     Gl2ps-1.4.2.7z   Gl2ps.bawt     
+
+# Libraries based on OpenSceneGraph.
+Setup osgcal    osgcal-0.2.1.7z  osgcal.bawt    MaxParallel=Linux:1 MaxParallel=Windows-gcc:1
+
+if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2008 } {
+    Setup osgearth  osgearth-2.8.7z     osgearth.bawt  ; # Possible deadlock: MaxParallel=Windows-gcc:1
+} else {
+    Setup osgearth  osgearth-2.10.1.7z  osgearth.bawt  ; # Possible deadlock: MaxParallel=Windows-gcc:1
+}

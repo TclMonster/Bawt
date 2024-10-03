@@ -1,0 +1,8 @@
+# Builds binary Python distribution for Windows and tclpy package.
+
+Include "Tcl_Basic.bawt"
+
+# Setup LibName  ZipFile                    BuildFile        BuildOptions
+ 
+Setup Python     Python-3.7.7-[GetBits].7z  Python.bawt      Version=3.7.7
+Setup tclpy      tclpy-0.4.7z               tclpy.bawt

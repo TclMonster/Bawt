@@ -1,0 +1,22 @@
+# Builds OpenSceneGraph with basic plugin libraries as needed by Tcl3D.
+
+Include "Tools.bawt"
+Include "BasicLibs.bawt"
+
+# Setup LibName           ZipFile                           BuildFile               BuildOptions
+
+# The following libraries can be compiled on Linux, but for OpenSceneGraph
+# we use the librarries installed by the Linux distribution.
+Setup freeglut            freeglut-3.2.2.7z                 freeglut.bawt           NoLinux NoDarwin
+if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2010 } {
+    Setup jasper          jasper-2.0.14.7z                  jasper.bawt             NoLinux NoDarwin
+} else {
+    Setup jasper          jasper-2.0.25.7z                  jasper.bawt             NoLinux NoDarwin
+}
+
+# OpenSceneGraph 3rd party libraries.
+Setup curl                curl-7.70.0.7z                    curl.bawt               
+
+# OpenSceneGraph
+Setup OpenSceneGraph      OpenSceneGraph-[GetOsgVersion].7z OpenSceneGraph.bawt     ; # Possible deadlock: MaxParallel=Windows-gcc:1
+Setup OpenSceneGraphData  OpenSceneGraphData-3.4.0.7z       OpenSceneGraphData.bawt

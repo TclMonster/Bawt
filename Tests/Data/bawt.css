@@ -1,0 +1,27 @@
+.header {
+    font-size: large;
+    font-family: monospace;
+    color: #414B72;
+    font-style: italic;
+    font-weight: bold; }
+
+.footer {
+    text-align: center;
+    font-size: smaller;
+}
+
+address {
+    font-size: smaller;
+}
+
+td.nowrap {
+    white-space: nowrap;
+}
+
+tr.top {
+    background-color: #414B72;
+}
+
+tr.logos {
+    background-color: #414B72;
+}

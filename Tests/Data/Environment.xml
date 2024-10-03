@@ -1,0 +1,7 @@
+<Environment>
+  <Location>
+    <Latitude Value="22.0" Unit="Degree"/>
+    <Longitude Value="-159.0" Unit="Degree"/>
+    <Altitude Value="100.0" Unit="Meter"/>
+  </Location>
+</Environment>

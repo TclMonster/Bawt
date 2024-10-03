@@ -1,0 +1,51 @@
+# Builds Tcl/Tk packages which depend on 3rd party libraries,
+# like SWIG, CMake, libressl or image libraries.
+
+Include "Tools.bawt"
+Include "BasicLibs.bawt"
+Include "Tcl_Basic.bawt"
+Include "Tcl_Python.bawt"
+
+# Setup LibName          ZipFile                        BuildFile          BuildOptions
+Setup   mawt             mawt-0.4.1.7z                  mawt.bawt  
+Setup   tcl3dBasic       tcl3d-0.9.5.7z                 tcl3dBasic.bawt  
+Setup   OglInfo          tcl3d-0.9.5.7z                 OglInfo.bawt  
+
+Setup   tkdnd            tkdnd-2.9.3.7z                 tkdnd.bawt
+Setup   tkribbon         tkribbon-1.1.7z                tkribbon.bawt
+
+Setup   tcltls           tcltls-1.7.22.7z               tcltls.bawt      
+Setup   Trf              Trf-2.1.4.7z                   Trf.bawt           NoDarwin
+
+Setup   imgjp2           imgjp2-0.1.7z                  imgjp2.bawt
+Setup   tzint            tzint-1.1.7z                   tzint.bawt       
+
+Setup   libgd            libgd-2.3.2.7z                 libgd.bawt       
+Setup   tclgd            tclgd-1.4.7z                   tclgd.bawt       
+
+Setup   cfitsio          cfitsio-4.1.0.7z               cfitsio.bawt 
+Setup   fitsTcl          fitsTcl-2.5.7z                 fitsTcl.bawt 
+Setup   pawt             pawt-1.1.0.7z                  pawt.bawt  
+
+Setup   libffi           libffi-3.4.2.7z                libffi.bawt       
+Setup   cffi             cffi-1.2.0.7z                  cffi.bawt 
+Setup   Ffidl            Ffidl-0.9.0.7z                 Ffidl.bawt 
+
+# MuPDF (and therefore dependent libraries tclMuPdf and MuPDFWidget)
+# are not available with VisualStudio < 2017.
+if { ( [UseVisualStudio "primary"] && [GetVisualStudioVersion] < 2017 ) || \
+       ! [IsGccCompilerNewer "4.8.5"] } {
+    Setup   mupdf        mupdf-1.18.2.7z                mupdf.bawt
+} else {
+    Setup   mupdf        mupdf-1.21.1.7z                mupdf.bawt
+}
+Setup   tclMuPdf         tclMuPdf-2.1.1.7z              tclMuPdf.bawt
+Setup   MuPDFWidget      MuPDFWidget-2.2.7z             MuPDFWidget.bawt
+
+Setup   hdc              hdc-0.2.0.1.7z                 hdc.bawt       
+Setup   gdi              gdi-0.9.9.15.7z                gdi.bawt       
+Setup   printer          printer-0.9.6.15.7z            printer.bawt       
+
+# Tcl programs wrapped as starpacks.
+Setup   BawtLogViewer    BawtLogViewer-[GetVersion].7z  BawtLogViewer.bawt         
+Setup   poApps           poApps-2.11.0.7z               poApps.bawt  

@@ -1,0 +1,47 @@
+# Example script for user supplied Finalize procedure.
+#
+# The procedure copies the generated Tcl distribution
+# from the Development folder into a folder specified
+# in your Path environment variable.
+#
+# You have to adapt the installation paths (tclRootDir)
+# according to your needs.
+#
+# To execute the Finalize procedure, the name of this file
+# must be specified on the BAWT command line with option
+# "--finalizefile".
+
+proc Finalize {} {
+    Log "Finalize (User defined)"
+
+    # For safety reasons this is just a dummy mode.
+    # Remove the next lines to enable functionality.
+    if { 1 } {
+        Log "Finalize Dummy mode" 2 false
+        return
+    }
+
+    if { [IsWindows] } {
+        set tclRootDir "C:/opt"
+    } elseif { [IsLinux] } {
+        set tclRootDir "~/opt"
+    } elseif { [IsDarwin] } {
+        set tclRootDir "~/opt"
+    } else {
+        ErrorAppend "Finalize: Cannot determine operating system" "FATAL"
+    }
+
+    set tclInstDir [file join $tclRootDir "Tcl"]
+
+    Log "Installing Tcl into $tclInstDir" 2 false
+    DirDelete $tclInstDir
+
+    MultiFileCopy [file join [GetOutputDevDir] [GetTclDir]] $tclInstDir "*" true
+
+    if { [IsDarwin] } {
+        foreach f [glob -nocomplain [file join $tclInstDir "lib" "libpng*"]] {
+            Log "Deleting file $f" 4 false
+            file delete -force $f
+        }
+    }
+}

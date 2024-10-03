@@ -1,0 +1,18 @@
+# Use this Setup file to create a Tcl/Tk distribution.
+
+# Builds Tcl/Tk with basic package libraries.
+# Include "Tcl_Basic.bawt"
+
+# Builds Tcl/Tk with extended package libraries including Tcl3D.
+# Include "Tcl3D.bawt"
+
+# Builds Tcl/Tk with extended package libraries.
+Include "Tcl_Extended.bawt"
+
+# Setup LibName         ZipFile              BuildFile              BuildOptions
+
+# Tcl/Tk distribution as InnoSetup installer.
+Setup InnoSetup         InnoSetup-6.2.0.7z   InnoSetup.bawt
+Setup Redistributables  Redistributables.7z  Redistributables.bawt
+Setup SetupTcl          SetupTcl.7z          SetupTcl.bawt
+Setup SetupPython       SetupPython.7z       SetupPython.bawt

@@ -1,0 +1,20 @@
+# Builds VulkanSceneGraph with basic plugin libraries.
+
+Include "OSG_Basic.bawt"
+Include "VSG_Basic.bawt"
+
+# Setup LibName         ZipFile                    BuildFile               BuildOptions
+
+Setup freeglut          freeglut-3.2.2.7z          freeglut.bawt
+Setup assimp            assimp-5.1.6.7z            assimp.bawt
+Setup curl              curl-7.70.0.7z             curl.bawt 
+Setup gdal              gdal-2.4.4.7z              gdal.bawt
+Setup Freetype          Freetype-2.10.4.7z         Freetype.bawt           NoLinux NoDarwin
+
+Setup vsgXchange        vsgXchange-1.0.0.7z        vsgXchange.bawt         -DBUILD_SHARED_LIBS=OFF
+Setup osg2vsg           osg2vsg-1.0.0.7z           osg2vsg.bawt            -DBUILD_SHARED_LIBS=OFF
+# Setup vsgImGui          vsgImGui-1.0.0.7z          vsgImGui.bawt           -DBUILD_SHARED_LIBS=OFF
+# Setup vsgGIS            vsgGIS-1.0.0.7z            vsgGIS.bawt             -DBUILD_SHARED_LIBS=OFF
+
+Setup vsgExamples       vsgExamples-1.0.0.7z       vsgExamples.bawt        -DBUILD_SHARED_LIBS=OFF
+Setup vsgSimpleApp      vsgSimpleApp-1.0.0.7z      vsgSimpleApp.bawt       -DBUILD_SHARED_LIBS=OFF

@@ -1,0 +1,35 @@
+# Builds basic libraries needed by several other libraries.
+
+Include "Tools.bawt"
+
+# All of the following libraries can be compiled on Linux or Darwin,
+# but it is better to use the system provided libraries.
+
+# Setup LibName ZipFile            BuildFile       BuildOptions
+
+# Basic library needed by most other libraries.
+Setup ZLib      ZLib-1.2.13.7z     ZLib.bawt       NoLinux NoDarwin
+Setup xz        xz-5.2.7.7z        xz.bawt         NoLinux NoDarwin
+
+# Basic Image libraries.
+Setup giflib    giflib-5.2.1.7z    giflib.bawt     NoLinux
+Setup libwebp   libwebp-1.2.4.7z   libwebp.bawt    NoLinux
+Setup JPEG      JPEG-9.e.7z        JPEG.bawt       NoLinux NoDarwin
+Setup openjpeg  openjpeg-2.5.0.7z  openjpeg.bawt
+Setup PNG       PNG-1.6.38.7z      PNG.bawt        NoLinux MaxParallel=Windows-gcc:1
+Setup TIFF      TIFF-4.4.0.7z      TIFF.bawt       NoLinux NoDarwin
+
+Setup ffmpeg    ffmpeg-4.4.1.7z    ffmpeg.bawt  
+
+Setup Freetype  Freetype-2.10.4.7z Freetype.bawt   NoLinux NoDarwin
+Setup libressl  libressl-2.9.2.7z  libressl.bawt
+
+if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2008 } {
+    # Visual Studio 2008
+    Setup SDL   SDL-2.0.4.7z       SDL.bawt                
+} elseif { [UseVisualStudio "primary"] && [GetVisualStudioVersion] == 2010 } {
+    # Visual Studio 2010
+    Setup SDL   SDL-2.0.8.7z       SDL.bawt                
+} else {
+    Setup SDL   SDL-2.26.1.7z      SDL.bawt                
+}

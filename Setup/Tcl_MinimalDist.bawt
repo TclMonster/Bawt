@@ -1,0 +1,11 @@
+# Builds just Tcl and Tk and creates a distribution setup file.
+
+# Setup LibName  ZipFile                 BuildFile  BuildOptions
+
+# Tcl and Tk.
+Setup Tcl        Tcl-[GetTclVersion].7z  Tcl.bawt
+Setup Tk         Tk-[GetTkVersion].7z    Tk.bawt
+
+# Tcl/Tk distribution as InnoSetup installer.
+Setup InnoSetup  InnoSetup-6.2.0.7z      InnoSetup.bawt
+Setup SetupTcl   SetupTcl.7z             SetupTcl.bawt

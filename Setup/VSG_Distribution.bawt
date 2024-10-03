@@ -1,0 +1,14 @@
+# Use this Setup file to create a VulkanSceneGraph distribution.
+
+# Builds VulkanSceneGraph with basic plugin libraries.
+# Include "VSG_Basic.bawt"
+
+# Builds VulkanSceneGraph with extended plugin libraries.
+Include "VSG_Extended.bawt"
+
+# Setup LibName         ZipFile              BuildFile              BuildOptions
+
+# VulkanSceneGraph distribution as InnoSetup installer.
+Setup InnoSetup         InnoSetup-6.2.0.7z   InnoSetup.bawt
+Setup Redistributables  Redistributables.7z  Redistributables.bawt
+Setup SetupVsg          SetupVsg.7z          SetupVsg.bawt

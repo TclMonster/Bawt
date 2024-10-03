@@ -1,0 +1,15 @@
+# Use this Setup file to create an OpenSceneGraph distribution.
+
+# Builds OpenSceneGraph with basic plugin libraries.
+# Include "OSG_Basic.bawt"
+
+# Builds OpenSceneGraph with extended plugin libraries, as
+# well as libraries depending on OpenSceneGraph like osgEarth.
+Include "OSG_Extended.bawt"
+
+# Setup LibName         ZipFile              BuildFile              BuildOptions
+
+# OpenSceneGraph distribution as InnoSetup installer.
+Setup InnoSetup         InnoSetup-6.2.0.7z   InnoSetup.bawt
+Setup Redistributables  Redistributables.7z  Redistributables.bawt
+Setup SetupOsg          SetupOsg.7z          SetupOsg.bawt

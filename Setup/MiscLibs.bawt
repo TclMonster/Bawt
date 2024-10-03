@@ -1,0 +1,36 @@
+# Builds miscellaneous libraries not related to Tcl or OpenSceneGraph.
+
+Include "Tools.bawt"
+Include "BasicLibs.bawt"
+
+# Setup LibName          ZipFile                  BuildFile               BuildOptions
+
+if { ( [UseVisualStudio "primary"] && [GetVisualStudioVersion] >= 2022 ) } {
+    Setup Boost          Boost-1.78.0.7z          Boost.bawt
+} elseif { ( [UseVisualStudio "primary"] && [GetVisualStudioVersion] >= 2015 ) || \
+     ( ! [UseVisualStudio "primary"] && [IsWindows] ) || \
+     ( ! [IsWindows] && [IsGccCompilerNewer "4.9.0"] ) } {
+    # This boost version can only be compiled with
+    # Windows: VS 2015 or newer.
+    # Unix   : gcc 4.9.0 or newer
+    Setup Boost          Boost-1.75.0.7z          Boost.bawt
+} else {
+    # This boost version cannot be compiled with MinGW gcc.
+    Setup Boost          Boost-1.58.0.7z          Boost.bawt
+}
+
+Setup ccl                ccl-4.0.6.7z             ccl.bawt
+Setup CERTI              CERTI-3.5.1.7z           CERTI.bawt              MaxParallel=Windows-gcc:1 NoLinux
+Setup Eigen              Eigen-3.3.9.7z           Eigen.bawt
+Setup fftw               fftw-3.3.9.7z            fftw.bawt
+if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2013 } {
+    Setup GeographicLib  GeographicLib-1.50.1.7z  GeographicLib.bawt
+} else {
+    Setup GeographicLib  GeographicLib-1.52.7z    GeographicLib.bawt
+}
+Setup GeographicLibData  GeographicLibData.7z     GeographicLibData.bawt
+Setup KDIS               KDIS-2.9.0.7z            KDIS.bawt
+Setup libxml2            libxml2-2.9.14.7z        libxml2.bawt
+Setup sqlite3            sqlite3-3.39.4.7z        sqlite3.bawt
+Setup tinyxml2           tinyxml2-8.0.0.7z        tinyxml2.bawt
+Setup Xerces             Xerces-3.2.4.7z          Xerces.bawt
