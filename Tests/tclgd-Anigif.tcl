@@ -1,4 +1,4 @@
-# Copyright 2017-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2017-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tclgd package.
 # Create an animated GIF.
@@ -17,7 +17,7 @@ set black [img allocate_color 0 0 0]
 img text $black $font 20 0 10 30 Hey
 
 set ofp [open $outFile "w"]
-fconfigure $ofp -encoding binary -translation binary
+fconfigure $ofp -translation binary
 
 img gif_anim_begin $ofp 1 0
 
@@ -46,6 +46,6 @@ img gif_anim_end $ofp
 
 close $ofp
 
-puts [format "Using tclgd %s on %s with Tcl %s-%dbit" \
+puts [format "Using tclgd %s on %s with %dbit Tcl %s" \
      [package version tclgd] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]

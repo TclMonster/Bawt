@@ -13,9 +13,10 @@ proc RunSample {w} {
     # [Hint] We disable the entry widget so that the user can't
     # mess up with the name of the newsgroup
     #
-    set msg [format "Using Tix %s on %s with Tcl %s-%dbit" \
+    set msg [format "Using Tix %s on %s with %dbit Tcl %s and Tk %s" \
             [package version Tix] $::tcl_platform(os) \
-            [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+            [expr $::tcl_platform(pointerSize) * 8] \
+            [info patchlevel] [package version Tk]]
 
     tixLabelEntry $w.top.name -label "Information: " -options {
 	entry.width 25

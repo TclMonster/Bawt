@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the MuPDFWidget package.
 # Slightly modified version of the MuPDFWidget demo.tcl script.
@@ -88,9 +88,11 @@ proc GUI::main { filename } {
     grid .c -row 1 -column 0 -sticky news
 
     label .msg -text \
-        [format "Using MuPDFWidget %s on %s with Tcl %s-%dbit" \
+        [format "Using MuPDFWidget %s on %s with %dbit Tcl %s and Tk %s" \
         [package version mupdf::widget] $::tcl_platform(os) \
-        [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+        [expr $::tcl_platform(pointerSize) * 8] \
+        [info patchlevel] [package version Tk]]
+
     grid .msg -row 2 -column 0 -sticky news
 
     grid rowconfigure    . 1 -weight 1

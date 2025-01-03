@@ -134,8 +134,8 @@ foreach size {5 10 30 } {
 }
 
 puts ""
-puts [format "Using tclpy %s on %s with Tcl %s-%dbit" \
+puts [format "Using tclpy %s on %s with %dbit Tcl %s" \
      [package version tclpy] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

@@ -1,4 +1,4 @@
-# Copyright 2005-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2005-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the Tcl3D subpackages tcl3dogl and tcl3dgl2ps.
 # Tcl3D demo displaying spheres in various modes.
@@ -311,9 +311,9 @@ grid columnconfigure .fr 0 -weight 1
 
 togl $frTogl.toglwin -width 500 -height 500 \
         -double true -depth true \
-        -displayproc DisplayCallback \
-        -reshapeproc ReshapeCallback \
-        -createproc  CreateCallback
+        -displaycommand DisplayCallback \
+        -reshapecommand ReshapeCallback \
+        -createcommand  CreateCallback
 pack $frTogl.toglwin -side top -expand 1 -fill both
 
 set frSett [frame $frSlid.sett]
@@ -397,9 +397,11 @@ checkbutton $frBttn.b5 -text "Save as PDF" -indicatoron [tcl3dShowIndicator] \
 eval pack [winfo children $frBttn] -side left -expand 1 -fill x
 tcl3dToolhelpAddBinding $frBttn.b5 "Save OpenGL window to file $pdfFile"
 
-set glInfo [format "Using Tcl3D %s on %s with a %s (OpenGL %s, Tcl %s-%dbit)" \
+set glInfo [format "Using Tcl3D %s on %s with a %s (OpenGL %s, %dbit Tcl %s and Tk %s)" \
            [package version tcl3d] $::tcl_platform(os) [glGetString GL_RENDERER] \
-           [glGetString GL_VERSION] [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+           [glGetString GL_VERSION] [expr $::tcl_platform(pointerSize) * 8] \
+           [info patchlevel] [package version Tk]]
+
 label $frInfo.l1 -text $glInfo
 eval pack [winfo children $frInfo] -pady 2 -side top -expand 1 -fill x
 

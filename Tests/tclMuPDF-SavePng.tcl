@@ -1,4 +1,4 @@
-# Copyright 2017-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2017-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tclMuPDF package.
 # Read PDF file and write first page as PNG.
@@ -24,8 +24,8 @@ $pdfObj quit
 
 puts ""
 set infoDict [mupdf::libinfo]
-puts [format "Using tclMuPDF %s (MuPDF %s) on %s with Tcl %s-%dbit" \
+puts [format "Using tclMuPDF %s (MuPDF %s) on %s with %dbit Tcl %s" \
      [package version tclMuPDF] [dict get $infoDict version] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8] [info patchlevel]]
 
 exit

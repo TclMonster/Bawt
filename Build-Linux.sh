@@ -1,19 +1,35 @@
 #!/bin/bash
 
-if [ $# -le 2 ] ; then
+OUTROOTDIR="../BawtBuild"
+NUMJOBS=`nproc`
+
+usage () {
     echo ""
-    echo "Usage: `basename $0` Architecture SetupFile Action [Target1] [TargetN]"
-    echo "  Architecture  : x86 x64"
-    echo "  Actions       : list clean extract configure compile distribute finalize complete update simulate touch"
+    echo "Usage: $1 Machine Bits SetupFile Action [Target1] [TargetN]"
+    echo "  Machine       : intel arm riscv"
+    echo "  Bits          : 32 64"
+    echo "  Actions       : list clean extract configure compile distribute"
+    echo "                  finalize complete update simulate touch test"
     echo "  Default target: all"
     echo ""
+    echo "  Output directory: ${OUTROOTDIR}"
+    echo ""
+    echo "Specify variable TCLKIT on the command line to use a separate bootstrap program."
+    echo "  Examples:"
+    echo "  TCLKIT=tclsh ./Build-Linux.sh intel 64 Setup/Tcl_Basic.bawt update"
+    echo "  TCLKIT=tclkit-Linux64-arm ./Build-Linux.sh arm 64 Setup/Tcl_Basic.bawt update"
     exit 1
+}
+
+if [ $# -le 3 ] ; then
+    usage `basename $0`
 fi
 
-ARCH=$1
-SETUPFILE=$2
-ACTION="$3"
-shift 3
+MACHINE=$1
+BITS=$2
+SETUPFILE=$3
+ACTION="$4"
+shift 4
 
 if [ $# -eq 0 ] ; then
     if [ "${ACTION}" == "clean" ] ; then
@@ -29,15 +45,20 @@ else
     TARGETS=$@
 fi
 
-if [ "${ARCH}" == "x64" ] ; then
-    BITS=64
-else
-    BITS=32
+if [ "${BITS}" == "64" ] ; then 
+    ARCH=x64
+fi
+if [ "${BITS}" == "32" ] ; then
+    ARCH=x86
+fi
+if [ -z "$ARCH" ] ; then
+    usage `basename $0`
 fi
 
-OUTROOTDIR="../BawtBuild"
-TCLKIT="./tclkit-Linux${BITS}"
-NUMJOBS=`nproc`
+if [ -z "$TCLKIT" ] ; then
+    TCLKIT="./tclkit-Linux${BITS}-${MACHINE}"
+fi
+
 ACTION="--${ACTION}"
 
 BAWTOPTS="--rootdir ${OUTROOTDIR} --architecture ${ARCH} --numjobs ${NUMJOBS}"

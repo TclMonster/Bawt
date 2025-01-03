@@ -1,6 +1,6 @@
-# Copyright 2020-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2020-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
-# Test program for the itk package.
+# Test program for the Iwidgets package.
 # Slightly modified version of itk demo program itkedit.
 
 package require Iwidgets 4.0
@@ -217,14 +217,15 @@ pack .msg
 
 split_view
 
-wm title . "itk-Edit"
+wm title . "Iwidgets-Edit"
 wm protocol . WM_DELETE_WINDOW { .mbar.file.menu invoke Quit }
 bind . <Escape> { exit }
 
 .msg configure -text \
-    [format "Using Iwidgets %s on %s with Tcl %s-%dbit" \
+    [format "Using Iwidgets %s on %s with %dbit Tcl %s and Tk %s" \
     [package version Iwidgets] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 focus .
 

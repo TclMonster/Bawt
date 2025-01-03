@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the treectrl package.
 
@@ -8,9 +8,10 @@ package require treectrl
 treectrl .t -width 500 -height 200
 
 ttk::label .msg -text \
-    [format "Using treectrl %s on %s with Tcl %s-%dbit" \
+    [format "Using treectrl %s on %s with %dbit Tcl %s and Tk %s" \
     [package version treectrl] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .t   -row 0 -column 0 -sticky news
 grid .msg -row 1 -column 0 -sticky news

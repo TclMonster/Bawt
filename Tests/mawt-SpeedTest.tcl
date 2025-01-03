@@ -1,4 +1,4 @@
-# Copyright:   2018-2023 Paul Obermeier (obermeier@poSoft.de)
+# Copyright:   2018-2024 Paul Obermeier (obermeier@poSoft.de)
 #
 #              See the file "Mawt_License.txt" for information on 
 #              usage and redistribution of this file, and for a
@@ -30,7 +30,7 @@ proc PlayMovie { movieFile } {
 
     set numBytes [$videoObj Start $displayWidth $displayHeight]
     if { $numBytes < 0 } {
-        puts [$videoObj GetErrorMessage]
+        puts "Error: [$videoObj GetErrorMessage]"
         exit 1
     }
 
@@ -46,6 +46,7 @@ proc PlayMovie { movieFile } {
     
     puts "MAWT version           : $gMawtVersion"
     puts "FFmpeg version         : [mawt GetFfmpegVersion]"
+    puts "img::raw version       : [package version img::raw]"
     puts "Movie file             : $movieFile"
     puts "Frame rate             : $frameRate"
     puts "Number of frames       : $numFrames"
@@ -208,9 +209,10 @@ label .l
 pack .l
 
 label .msg -text \
-    [format "Using mawt %s on %s with Tcl %s-%dbit" \
+    [format "Using mawt %s on %s with %dbit Tcl %s and Tk %s" \
     [package version mawt] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 pack .msg
 
 bind . <Escape> { exit }

@@ -1,4 +1,4 @@
-# Copyright 2005-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2005-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the Tcl3D extension package gauge.
 # The program allows to show the 4 gauges at different sizes.
@@ -100,9 +100,10 @@ proc CreateWidgets { resMin resMax resIncr } {
     label .fr.info
     grid .fr.info -row 5 -columnspan $numWidgets
     .fr.info configure -text \
-        [format "Using Tcl3D %s on %s with a %s (OpenGL %s, Tcl %s-%dbit)" \
+        [format "Using Tcl3D %s on %s with a %s (OpenGL %s, %dbit Tcl %s and Tk %s)" \
            [package version tcl3d] $::tcl_platform(os) [glGetString GL_RENDERER] \
-           [glGetString GL_VERSION] [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+           [glGetString GL_VERSION] [expr $::tcl_platform(pointerSize) * 8] \
+           [info patchlevel] [package version Tk]]
 }
 
 frame .fr

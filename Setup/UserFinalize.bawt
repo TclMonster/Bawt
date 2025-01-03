@@ -24,9 +24,9 @@ proc Finalize {} {
     if { [IsWindows] } {
         set tclRootDir "C:/opt"
     } elseif { [IsLinux] } {
-        set tclRootDir "~/opt"
+        set tclRootDir [file join [GetHomeDir] "opt"]
     } elseif { [IsDarwin] } {
-        set tclRootDir "~/opt"
+        set tclRootDir [file join [GetHomeDir] "opt"]
     } else {
         ErrorAppend "Finalize: Cannot determine operating system" "FATAL"
     }

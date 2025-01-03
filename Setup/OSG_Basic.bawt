@@ -15,8 +15,12 @@ if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2010 } {
 }
 
 # OpenSceneGraph 3rd party libraries.
-Setup curl                curl-7.70.0.7z                    curl.bawt               
+if { [IsGccCompilerNewer "13.0.0"] && ! [IsWindows]  } {
+    Setup curl            curl-7.88.1.7z                     curl.bawt
+} else {
+    Setup curl            curl-7.70.0.7z                     curl.bawt
+}
 
 # OpenSceneGraph
-Setup OpenSceneGraph      OpenSceneGraph-[GetOsgVersion].7z OpenSceneGraph.bawt     ; # Possible deadlock: MaxParallel=Windows-gcc:1
+Setup OpenSceneGraph      OpenSceneGraph-[GetOsgVersion].7z OpenSceneGraph.bawt
 Setup OpenSceneGraphData  OpenSceneGraphData-3.4.0.7z       OpenSceneGraphData.bawt

@@ -1,12 +1,7 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tkpath package.
 # Slightly modified tkpath example apple.tcl.
-
-if { $tcl_platform(os) eq "Darwin" } {
-    puts "Windows/Linux only"
-    exit 1
-}
 
 package require tkpath
 
@@ -14,9 +9,10 @@ set w .tkpath
 set tkp [tkp::canvas $w -width 400 -height 400 -bg white]
 
 ttk::label .msg -text \
-    [format "Using tkpath %s on %s with Tcl %s-%dbit" \
+    [format "Using tkpath %s on %s with %dbit Tcl %s and Tk %s" \
     [package version tkpath] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid $tkp -row 0 -column 0
 grid .msg -row 1 -column 0

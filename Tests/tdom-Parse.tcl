@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tdom package.
 
@@ -62,8 +62,8 @@ foreach node [$topNode childNodes] {
 }
 
 puts ""
-puts [format "Using tdom %s on %s with Tcl %s-%dbit" \
+puts [format "Using tdom %s on %s with %dbit Tcl %s" \
      [package version tdom] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

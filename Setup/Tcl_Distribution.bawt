@@ -12,7 +12,7 @@ Include "Tcl_Extended.bawt"
 # Setup LibName         ZipFile              BuildFile              BuildOptions
 
 # Tcl/Tk distribution as InnoSetup installer.
-Setup InnoSetup         InnoSetup-6.2.0.7z   InnoSetup.bawt
+Setup InnoSetup         InnoSetup-6.2.2.7z   InnoSetup.bawt
 Setup Redistributables  Redistributables.7z  Redistributables.bawt
 Setup SetupTcl          SetupTcl.7z          SetupTcl.bawt
 Setup SetupPython       SetupPython.7z       SetupPython.bawt

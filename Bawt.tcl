@@ -2,7 +2,7 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" ${1+"$@"}
 
-# Copyright: 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright: 2016-2025 Paul Obermeier (obermeier@tcl3d.org)
 # Distributed under BSD license.
 
 namespace eval BawtHelp {
@@ -201,7 +201,12 @@ namespace eval BawtLog {
 
     proc WriteBuildLog { libName appendToFile logMsg } {
         if { [GetLogLevel] > 0 } {
-            set logFile [file join [GetOutputLogDir] [format "%s.log" $libName]]
+            if { [UseStage "Test"] } {
+                set fileName [format "%s-Test.log" $libName]
+            } else {
+                set fileName [format "%s.log" $libName]
+            }
+            set logFile [file join [GetOutputLogDir] $fileName]
             if { $appendToFile } {
                 set mode "a"
             } else {
@@ -348,7 +353,12 @@ namespace eval BawtZip {
             }
         } else {
             if { $zipCmd eq "" } {
-                set zipCmd [auto_execok "7zr"]
+                foreach zipName [list "7za" "7zr" "7zz"] {
+                    set zipCmd [auto_execok $zipName]
+                    if { $zipCmd ne "" } {
+                        break
+                    }
+                }
                 if { $zipCmd eq "" } {
                     set bawtZipProg [file join [Get7ZipDistDir] "7z"]
                     if { [file exists $bawtZipProg] } {
@@ -365,7 +375,13 @@ namespace eval BawtZip {
 
     proc GetZipProg { { exitOnError true } } {
         set progName "zip[GetExeSuffix]"
-        set zipCmd [auto_execok $progName]
+        set zipCmd ""
+        if { ! [IsWindows] } {
+            # Always use the BAWT supplied zip program on Windows, as there
+            # are zip programs around which do not work correctly when 
+            # building Tcl/Tk 9.0. 
+            set zipCmd [auto_execok $progName]
+        }
         if { $zipCmd eq "" } {
             set bawtZipProg [file join [GetZipDistDir] $progName]
             if { [file exists $bawtZipProg] } {
@@ -405,6 +421,10 @@ namespace eval BawtZip {
     proc Bootstrap {} {
         Log "Bootstrap"
 
+        if { ! [file isdirectory [GetBootstrapDir]] } {
+            ErrorAppend "Bootstrap directory [GetBootstrapDir] not existent." "FATAL"
+        }
+
         # First check, if bootstrap tool 7-Zip is either available on the system
         # or is in the Bootstrap directory as compressed file.
         # Note:
@@ -417,6 +437,12 @@ namespace eval BawtZip {
         if { $haveZipProg } {
             Log "7-Zip available: $zipProg" 2 false
         } else {
+            if { [IsLinux] && [IsArm] } {
+                ErrorAppend "No 7-zip for Linux ARM supported by BAWT. Please install 7-zip separately." "FATAL"
+            }
+            if { [IsRiscV] } {
+                ErrorAppend "No 7-zip for RiscV supported by BAWT. Please install 7-zip separately." "FATAL"
+            }
             set zipFile [file join [GetBootstrapDir] "7-Zip.zip"]
             if { ! [file exists $zipFile] } {
                 ErrorAppend "Cannot find 7-Zip program" "FATAL"
@@ -434,14 +460,24 @@ namespace eval BawtZip {
         set zipProg [GetZipProg false]
         set haveZipProg [expr { $zipProg ne "" ? true : false }]
         if { $haveZipProg } {
-            Log "zip available: $zipProg" 2 false
+            Log "zip available  : $zipProg" 2 false
         } else {
+            if { [IsArm] } {
+                ErrorAppend "No zip for ARM supported by BAWT. Please install zip separately." "FATAL"
+            }
+            if { [IsRiscV] } {
+                ErrorAppend "No zip for RiscV supported by BAWT. Please install zip separately." "FATAL"
+            }
             set zipFile [file join [GetBootstrapDir] "zip.zip"]
             if { [file exists $zipFile] } {
                 Log "Extract zip" 2 false
                 Log "Source file     : $zipFile" 4 false
                 Log "Target directory: [GetZipDistDir]"  4 false
                 Unzip $zipFile [GetZipDistDir] "vfs"
+                if { [IsLinux] } {
+                    SetFilePermissions [GetZipDistDir] "u+rwx" true
+                    file copy [file join [GetZipDistDir] "zip[GetBits]"] [file join [GetZipDistDir] "zip"]
+                }
                 SetFilePermissions [file join [GetZipDistDir] "zip"] "u+rwx"
             }
         }
@@ -514,7 +550,7 @@ namespace eval BawtZip {
                 Log "MinGW available: $msysDistDir"     2 false
             }
             if { [file exists [GetMSysConsole]] } {
-                Log "MSys available:  [GetMSysConsole]" 2 false
+                Log "MSys available : [GetMSysConsole]" 2 false
             } else {
                 ErrorAppend "Cannot find MSys console at [GetMSysConsole]" "FATAL"
             }
@@ -526,8 +562,10 @@ namespace eval BawtFile {
 
     namespace export SetFilePermissions
     namespace export GetCurlProg GetMd5Prog
+    namespace export SetCurlCertificate GetCurlCertificate
     namespace export CreateBackupFile
     namespace export DownloadFile
+    namespace export GetHomeDir
     namespace export GetMSysDir GetMSysBinDir
     namespace export SetMSysVersion
     namespace export GetMSysConsole
@@ -606,6 +644,15 @@ namespace eval BawtFile {
         }
     }
 
+    proc GetHomeDir {} {
+        if { [package vcompare "9.0" [info tclversion]] <= 0 } {
+            set homeDir [file tildeexpand "~"]
+        } else {
+            set homeDir "~"
+        }
+        return $homeDir
+    }
+
     proc GetMSysDir { { msysVersion -1 } } {
         set msys1Dir [file join [GetOutputToolsDir] [GetMingwDir] "msys"]
         set msys2Dir [file join [GetOutputToolsDir] [GetMingwDir] "msys32"]
@@ -642,19 +689,33 @@ namespace eval BawtFile {
 
     proc GetCurlProg { { exitOnError true } } {
         set progName "curl[GetExeSuffix]"
-        set curlCmd [auto_execok $progName]
-        if { $curlCmd eq "" } {
-            if { [IsWindows] } {
-                set curlPath [file join [GetMSysBinDir] $progName]
-                if { [file exists $curlPath] } {
-                    return $curlPath
-                }
+        if { [IsWindows] } {
+            set curlPath [file join [GetMSysBinDir] $progName]
+            if { [file exists $curlPath] } {
+                return $curlPath
             }
         }
+        set curlCmd [auto_execok $progName]
         if { $curlCmd eq "" && $exitOnError } {
             ErrorAppend "Cannot find curl program" "FATAL"
         }
         return $curlCmd
+    }
+
+    proc SetCurlCertificate { fileName } {
+        variable sCurlCertificate
+
+        set sCurlCertificate [file normalize $fileName]
+    }
+
+    proc GetCurlCertificate {} {
+        variable sCurlCertificate
+
+        if { [info exists sCurlCertificate] } {
+            return $sCurlCertificate
+        } else {
+            return ""
+        }
     }
 
     proc GetMd5Prog { { exitOnError true } } {
@@ -718,14 +779,18 @@ namespace eval BawtFile {
 
         CreateBackupFile $outFile
 
-        set cmd "$curlProg -I $sourceFileUrl"
+        set cacert ""
+        if { [GetCurlCertificate] ne "" } {
+            set cacert "-cacert [GetCurlCertificate] "
+        }
+        set cmd "$curlProg $cacert -I $sourceFileUrl"
         set result [MSysRun $libName "DownloadFile" "" "$cmd"]
         if { [string match -nocase "*404 Not Found*" $result] } {
             ErrorAppend "File $sourceFileUrl not existent." $errorType
             return
         }
 
-        set cmd "$curlProg -s -o $targetFile $sourceFileUrl"
+        set cmd "$curlProg $cacert -s -o $targetFile $sourceFileUrl"
         MSysRun $libName "DownloadFile" "" "$cmd"
 
         if { $errorType eq "FATAL" } {
@@ -1069,7 +1134,27 @@ namespace eval BawtFile {
         }
     }
 
-    proc SingleFileCopy { sourceFile targetDir { newName "" } } {
+    proc SingleFileCopy { sourceFile targetDir args } {
+        set opts [dict create \
+            -mustexist true   \
+            -rename    ""     \
+        ]
+        if { [llength $args] == 1 } {
+            # Old mode with optional string parameter newName
+            dict set opts -rename [lindex $args 0]
+        } else {
+            foreach { key value } $args {
+                if { [dict exists $opts $key] } {
+                    if { $value eq "" } {
+                        ErrorAppend "No value specified for key \"$key\"." "FATAL"
+                    }
+                    dict set opts $key $value
+                } else {
+                    ErrorAppend "Unknown option key \"$key\"." "FATAL"
+                }
+            }
+        }
+        set newName [dict get $opts "-rename"]
         Log "SingleFileCopy" 2
         Log "Source file     : $sourceFile" 4 false
         Log "Target directory: $targetDir"  4 false
@@ -1078,13 +1163,16 @@ namespace eval BawtFile {
         } else {
             set newName [file tail $sourceFile]
         }
+        Log "Must exist      : [dict get $opts "-mustexist"]"  4 false
 
-        if { ! [file isdirectory $targetDir] } {
-            file mkdir $targetDir
-        }
         if { ! [file exists $sourceFile] } {
-            ErrorAppend "File $sourceFile does not exist." "FATAL"
+            if { [dict get $opts "-mustexist"] } {
+                ErrorAppend "File $sourceFile does not exist." "FATAL"
+            }
         } else {
+            if { ! [file isdirectory $targetDir] } {
+                file mkdir $targetDir
+            }
             file copy -force $sourceFile [file join $targetDir $newName]
         }
     }
@@ -1106,6 +1194,7 @@ namespace eval BawtFile {
         } else {
             Log "Number of copied files: $sCopyCount" 4 false
         }
+        return $sCopyCount
     }
 
     proc LibFileCopy { sourceDir targetDir { pattern "*" } { keepFolders false } } {
@@ -1120,11 +1209,16 @@ namespace eval BawtFile {
             append errMsg "Neither \"$sourceLibDir1\" nor \"$sourceLibDir2\""
             ErrorAppend $errMsg "FATAL"
         }
+        set numFilesCopied1 0
+        set numFilesCopied2 0
         if { [file isdirectory $sourceLibDir1] } {
-            MultiFileCopy $sourceLibDir1 $targetLibDir $pattern $keepFolders
+            set numFilesCopied1 [MultiFileCopy $sourceLibDir1 $targetLibDir $pattern $keepFolders false]
         }
         if { [file isdirectory $sourceLibDir2] } {
-            MultiFileCopy $sourceLibDir2 $targetLibDir $pattern $keepFolders
+            set numFilesCopied2 [MultiFileCopy $sourceLibDir2 $targetLibDir $pattern $keepFolders false]
+        }
+        if { $numFilesCopied1 == 0 && $numFilesCopied2 == 0 } {
+            ErrorAppend "LibFileCopy: No files copied from \"$sourceLibDir1\" or \"$sourceLibDir2\"." "Warning"
         }
     }
 
@@ -1329,6 +1423,8 @@ namespace eval BawtBuild {
     namespace export DisableStage DisableStages DisableAllStages
     namespace export UseStage IsBuildStage GetUsedStages
     namespace export UseTclPkgVersion ExitOnFatalError
+    namespace export UseSanitizer GetSanitizerCFlags GetSanitizerLdFlags
+    namespace export UseUniversal GetUniversalCFlags
     namespace export SetBuildType GetBuildType GetValidBuildTypes
     namespace export SetCompilerVersion GetCompilerVersion
     namespace export SetCompilerVersions GetCompilerVersions
@@ -1337,11 +1433,13 @@ namespace eval BawtBuild {
     namespace export SetTimeout GetTimeout
     namespace export GetMingwVersion GetMingwGccVersion SetMingwGccVersion
     namespace export GetMingwDir GetMingwSubDir GetMingwIncludeDir
-    namespace export GetMingwLib GetPthreadLib GetSehLib
+    namespace export GetMingwLib GetPthreadLib GetSehLib GetTclZlib
     namespace export HaveYasmProg
-    namespace export GetGendefProg GetSWIGDistDir
+    namespace export GetGendefProg GetSWIGDistDir GetPandocDistDir
     namespace export GetCMakeDistDir GetCMakeProg GetCMakeMSysOption
     namespace export GetMSysCppOption
+    namespace export GetPermissiveCFlags
+    namespace export GetPermissiveDarwinCFlags
     namespace export GetInnoDistDir GetInnoProg
     namespace export GetVcvarsProg SetVcvarsProg
     namespace export GetVSRuntimeLibDir SetVSRuntimeLibDir
@@ -1354,10 +1452,10 @@ namespace eval BawtBuild {
     namespace export GetDebugSuffix GetWinDebugSuffix
     namespace export SetArchitecture GetArchitecture GetValidArchitectures
     namespace export Is32Bit Is64Bit GetBits
-    namespace export IsIntel IsArm
+    namespace export IsIntel IsArm IsRiscV
     namespace export IsWindows IsLinux IsDarwin IsUnix
     namespace export GetMajor GetMinor GetPatch GetMajorMinor GetMajorMinorPatch
-    namespace export VersionCompare
+    namespace export VersionCompare VersionCheck UnifyVersionNumber
     namespace export GetPlatformName GetMsBuildPlatform
     namespace export GetExeSuffix GetBatchSuffix GetExePattern
     namespace export GetLibSuffix GetImportLibSuffix GetStaticLibSuffix GetLibPattern
@@ -1378,6 +1476,8 @@ namespace eval BawtBuild {
     namespace export SetImgVersion GetImgVersion
     namespace export SetOsgVersion GetOsgVersion
     namespace export SetVsgVersion GetVsgVersion
+    namespace export SetLibraryVersion GetLibraryVersion
+    namespace export SetLibraryZipFile GetLibraryZipFile
     namespace export SetTclDir GetTclDir
     namespace export SetPythonDir GetPythonDir
     namespace export GetTclLibDir GetTclBinDir GetTclIncDir
@@ -1396,9 +1496,9 @@ namespace eval BawtBuild {
     namespace export CleanLib
     namespace export BuildLib
     namespace export CMakeConfig CMakeBuild
-    namespace export NMakeBuild
+    namespace export NMakeBuild NMakeTest
     namespace export MsBuild
-    namespace export MSysConfig MSysRun MSysBuild
+    namespace export MSysConfig MSysRun MSysBuild MSysTest
     namespace export TeaConfig
     namespace export NeedDll2Lib Dll2Lib
     namespace export DosRun
@@ -1412,25 +1512,26 @@ namespace eval BawtBuild {
         Compile,all      false
         Distribute,all   false
         Finalize,all     false
+        Test,all         false
         Update,all       false
         Touch,all        false
     }
     variable sStageOrder
-    set sStageOrder [list Clean Extract Configure Compile Distribute Finalize Touch]
+    set sStageOrder [list Clean Extract Configure Compile Distribute Finalize Touch Test]
 
     variable sBuildOpts
     array set sBuildOpts {
-        TclVersion                 "8.6.13"
-        ImgVersion                 "1.4.14"
-        OsgVersion                 "3.6.5"
-        VsgVersion                 "1.0.0"
+        Version,Tcl                "8.6.16"
+        Version,Img                "2.0.1"
+        Version,Osg                "3.6.5"
+        Version,Vsg                "1.0.0"
         TclDir                     "opt/Tcl"
         PythonDir                  "opt/Python"
         DistDir                    ""
         Tclkit,all,IconFile        ""
         Tclkit,all,ResourceFile    ""
         Tclkit,all,CertFile        ""
-        Tclkit,All,TimeStampUrl    "http://timestamp.comodoca.com/authenticode"
+        Tclkit,All,TimeStampUrl    "http://timestamp.digicert.com"
         Tclkit,all,CompanyName     ""
         Tclkit,all,LegalCopyright  ""
         Tclkit,all,FileDescription ""
@@ -1446,6 +1547,8 @@ namespace eval BawtBuild {
         ExitOnFatalError           true
         UseRecursiveDependencies   true
         UseShortRootDir            false
+        UseSanitizer               false
+        UseUniversal               false
     }
 
     proc GetValidSortModes {} {
@@ -1498,7 +1601,7 @@ namespace eval BawtBuild {
         Log "Output file: $starpackExe"  4 false
 
         file delete -force $starpackExe
-        file copy $runtimeTcl $tclkit
+        file copy -force $runtimeTcl $tclkit
 
         file mkdir $starpackVfsDir
         file mkdir $starpackVfsLibDir
@@ -1511,17 +1614,20 @@ namespace eval BawtBuild {
                 continue
             } elseif { [string first "--" $pkg] == 0 } {
                 Log "Add option : $pkg" 4 false
-                if { $pkg eq "--runtime-vs" } {
-                    if { [GetVSRuntimeLibDir] ne "" } {
-                        MultiFileCopy [GetVSRuntimeLibDir] $starpackVfsRunDir "vcruntime*.dll"
+                if { $pkg eq "--runtime-vs" || $pkg eq "--runtime-gcc" } {
+                    SingleFileCopy [GetTclZlib] $starpackVfsRunDir
+                    if { $pkg eq "--runtime-vs" } {
+                        if { [GetVSRuntimeLibDir] ne "" } {
+                            MultiFileCopy [GetVSRuntimeLibDir] $starpackVfsRunDir "vcruntime*.dll"
+                        }
+                    } elseif { $pkg eq "--runtime-gcc" } {
+                        SingleFileCopy [GetPthreadLib] $starpackVfsRunDir
+                        SingleFileCopy [GetSehLib]     $starpackVfsRunDir
                     }
-                } elseif { $pkg eq "--runtime-gcc" } {
-                    SingleFileCopy [GetPthreadLib] $starpackVfsRunDir
-                    SingleFileCopy [GetSehLib]     $starpackVfsRunDir
                 }
             } elseif { [file isfile $pkg] } {
                 Log "Add file   : $pkg" 4 false
-                file copy $pkg $starpackVfsLibDir
+                file copy -force $pkg $starpackVfsLibDir
             } else {
                 Log "Add package: $pkg" 4 false
                 if { ! [file isdirectory $pkg] } {
@@ -1553,16 +1659,16 @@ namespace eval BawtBuild {
                                         [join $dirList "\n  "]" "Warning"
                         }
                         foreach pkg $dirList {
-                            file copy $pkg [file join $starpackVfsLibDir [file tail $pkg]]
+                            file copy -force $pkg [file join $starpackVfsLibDir [file tail $pkg]]
                         }
                         continue
                     }
                     set pkg [lindex $dirList 0]
                 }
-                file copy $pkg [file join $starpackVfsLibDir [file tail $pkg]]
+                file copy -force $pkg [file join $starpackVfsLibDir [file tail $pkg]]
             }
         }
-        file copy $appScript $starpackVfsLibDir
+        file copy -force $appScript $starpackVfsLibDir
 
         set mainFile [file join $starpackVfsDir "main.tcl"]
 
@@ -1583,7 +1689,7 @@ namespace eval BawtBuild {
 
         if { [IsDarwin] } {
             set templateDir [file join [GetInputResourceDir] "Template.app"]
-            file copy $templateDir $buildDir
+            file copy -force $templateDir $buildDir
         }
 
         set winInfo ""
@@ -1650,11 +1756,11 @@ namespace eval BawtBuild {
                         ErrorAppend "MakeStarpack${type}: Cannot find icon file [GetTclkitIconFile $appName]" "FATAL"
                     }
                 }
-                file copy $iconFile [file join $buildDir "Template.app" "Contents" "Resources"] 
+                file copy -force $iconFile [file join $buildDir "Template.app" "Contents" "Resources"] 
             }
             set infoFile [file join $buildDir "Template.app" "Contents" "Info.plist"]
             ReplaceKeywords $infoFile $macInfo
-            file copy $starpackExe [file join $buildDir "Template.app" "Contents" "MacOS"]
+            file copy -force $starpackExe [file join $buildDir "Template.app" "Contents" "MacOS"]
             file rename [file join $buildDir "Template.app"] [file join $buildDir "${appName}.app"]
         }
 
@@ -1672,6 +1778,7 @@ namespace eval BawtBuild {
 
             cd $buildDir
             exec $tclkit [file join $tclBinDir sdx.kit] wrap $appName -runtime $runtimeTcl
+            file delete -force $starpackBatchExe
             file rename $appName $starpackBatchExe
         }
 
@@ -1725,13 +1832,11 @@ namespace eval BawtBuild {
         set cflags ""
         set userConfig [GetUserConfig $libName]
         if { [llength $userConfig] > 0 } {
-            append cflags "CFLAGS=\" "
             foreach arg $userConfig {
-                if { [string match "-D*" $arg] } {
+                if { [string match "-*" $arg] } {
                     append cflags "$arg "
                 }
             }
-            append cflags "\" "
         }
         return $cflags
     }
@@ -1836,6 +1941,7 @@ namespace eval BawtBuild {
         DisableStage "Distribute" $libName
         DisableStage "Finalize"   $libName
         DisableStage "Touch"      $libName
+        DisableStage "Test"       $libName
     }
 
     proc UseStage { stage { libName "all" } } {
@@ -1858,10 +1964,11 @@ namespace eval BawtBuild {
 
     proc IsBuildStage { { libName "all" } } {
         return [expr \
-            [UseStage "Extract" $libName]   || \
-            [UseStage "Configure" $libName] || \
-            [UseStage "Compile" $libName]   || \
-            [UseStage "Distribute" $libName]]
+            [UseStage "Extract"    $libName] || \
+            [UseStage "Configure"  $libName] || \
+            [UseStage "Compile"    $libName] || \
+            [UseStage "Distribute" $libName] || \
+            [UseStage "Test"       $libName]]
     }
 
     proc GetUsedStages { { libName "all" } } {
@@ -1898,6 +2005,50 @@ namespace eval BawtBuild {
             return $sBuildOpts(ExitOnFatalError)
         } else {
             set sBuildOpts(ExitOnFatalError) $onOff
+        }
+    }
+
+    proc UseSanitizer { { onOff "" } } {
+        variable sBuildOpts
+
+        if { $onOff eq "" } {
+            return $sBuildOpts(UseSanitizer)
+        } else {
+            set sBuildOpts(UseSanitizer) $onOff
+        }
+    }
+
+    proc GetSanitizerCFlags {} {
+        if { [UseSanitizer] } {
+            return "-fsanitize=address,undefined"
+        } else {
+            return ""
+        }
+    }
+
+    proc GetSanitizerLdFlags {} {
+        if { [UseSanitizer] } {
+            return "-fsanitize=address,undefined -static-libasan"
+        } else {
+            return ""
+        }
+    }
+
+    proc UseUniversal { { onOff "" } } {
+        variable sBuildOpts
+
+        if { $onOff eq "" } {
+            return $sBuildOpts(UseUniversal)
+        } else {
+            set sBuildOpts(UseUniversal) $onOff
+        }
+    }
+
+    proc GetUniversalCFlags {} {
+        if { [UseUniversal] } {
+            return "-arch arm64 -arch x86_64 -mmacosx-version-min=11.0"
+        } else {
+            return ""
         }
     }
 
@@ -2014,6 +2165,11 @@ namespace eval BawtBuild {
         if { [IsWindows] } {
             return [GetMingwGccVersion]
         } else {
+            # gcc has option "-dumpversion" (dumps only major version) and
+            # "-dumpfullversion" (dumps full version, but is not available with
+            # gcc version 4.X).
+            # So we scan the output of option "-v", where the last line shows
+            # the full version number using different output formats.
             try {
                 set result [exec gcc -v]
             } trap NONE result {
@@ -2024,6 +2180,9 @@ namespace eval BawtBuild {
                 set line [string trim $line]
                 if { [string match "gcc version*" $line] } {
                     scan $line "gcc version %s" version
+                    break
+                } elseif { [string match "gcc-Version*" $line] } {
+                    scan $line "gcc-Version %s" version
                     break
                 } elseif { [string match "Apple clang version*" $line] } {
                     scan $line "Apple clang version %s" version
@@ -2118,6 +2277,10 @@ namespace eval BawtBuild {
         return [file join [GetOutputDevDir] "opt" "SWIG" "bin"]
     }
 
+    proc GetPandocDistDir {} {
+        return [file join [GetOutputDevDir] "opt" "pandoc"]
+    }
+
     proc GetCMakeDistDir {} {
         return [file join [GetOutputDevDir] "opt" "CMake" "bin"]
     }
@@ -2147,6 +2310,25 @@ namespace eval BawtBuild {
             set opt "CXX='g++ -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive' "
         }
         return $opt
+    }
+
+    proc GetPermissiveCFlags { { force false } } {
+        if { [GetMajor [GetGccCompilerVersion]] >= 14 || $force } {
+            return "-fpermissive [GetPermissiveDarwinCFlags $force]"
+        }
+        return ""
+    }
+
+    proc GetPermissiveDarwinCFlags { { force } } {
+        if { [IsDarwin] && ( [IsArm] || $force ) } {
+            set noErr ""
+            append noErr "-Wno-error=incompatible-function-pointer-types "
+            append noErr "-Wno-error=incompatible-pointer-types "
+            append noErr "-Wno-error=int-conversion "
+            append noErr "-Wno-error=implicit-function-declaration " 
+            return $noErr
+        }
+        return ""
     }
 
     proc GetInnoDistDir {} {
@@ -2230,6 +2412,10 @@ namespace eval BawtBuild {
         }
     }
 
+    proc GetTclZlib {} {
+        return [file join [GetDevTclBinDir] "zlib1.dll"]
+    }
+
     proc GetMSysShell {} {
         if { [IsWindows] } {
             return [file join [GetMSysBinDir] "sh.exe"]
@@ -2294,7 +2480,7 @@ namespace eval BawtBuild {
 
     proc GetWinDebugSuffix { { suffix "g" } } {
         set debugSuffix ""
-        if { [IsDebugBuild] && [IsWindows] } {
+        if { [IsDebugBuild] && [IsWindows] && [GetMajor [GetTclVersion]] < 9 } {
             set debugSuffix $suffix
         }
         return $debugSuffix
@@ -2344,6 +2530,39 @@ namespace eval BawtBuild {
         }
     }
 
+    proc UnifyVersionNumber { libVersion } {
+        set versionNumbers [split $libVersion "."]
+        if { [llength $versionNumbers] == 3 } {
+            # A standard version number with 2 dots: Major.Minor.Patch
+            if { [string is integer -strict [lindex $versionNumbers 0]] && \
+                 [string is integer -strict [lindex $versionNumbers 1]] && \
+                 [string is integer -strict [lindex $versionNumbers 2]] } {
+                return $libVersion
+            }
+        } elseif { [llength $versionNumbers] == 2 } {
+            # An alpha or beta version number with only 1 dot: Major.Minor[a|b]Number
+            # Scan minor string until no number is found.
+            set minorString [lindex $versionNumbers 1]
+            set minorNumber ""
+            for { set i 0 } { $i < [llength $minorString] } { incr i } {
+                if { [string is integer -strict [string index $minorString $i]] } {
+                    append minorNumber [string index $minorString $i]
+                } else {
+                    break
+                }
+            }
+            if { [string is integer -strict [lindex $versionNumbers 0]] && \
+                 [string is integer -strict $minorNumber] } {
+                return [format "%d.%d.%d" [lindex $versionNumbers 0] $minorNumber 0]
+            }
+        } elseif { [llength $versionNumbers] == 1 } {
+            if { [string is integer -strict [lindex $versionNumbers 0]] } {
+                return [format "%d.%d.%d" [lindex $versionNumbers 0] 0 0]
+            }
+        }
+        return "UnifyVersionNumber: Invalid version number \"$libVersion\"."
+    }
+
     proc GetMajor { libVersion } {
         return [lindex [split $libVersion "."] 0]
     }
@@ -2386,7 +2605,11 @@ namespace eval BawtBuild {
 
     proc VersionCompare { version1 version2 } {
         # A wrapper around package vcompare to handle alpha or beta versions
-        # containing "a" or "b", ex. 8.7.a4 
+        # containing "a" or "b", ex. 8.7.a4. 
+        # Alpha and Beta versions are handled as having a patch version of zero,
+        # so 8.6.a4 is equal to 8.6.b1.
+        set version1 [UnifyVersionNumber $version1]
+        set version2 [UnifyVersionNumber $version2]
         set patchVersion1 [GetPatch $version1]
         set patchVersion2 [GetPatch $version2]
         if { ! [string is integer -strict $patchVersion1] } {
@@ -2396,6 +2619,19 @@ namespace eval BawtBuild {
             set version2 [format "%d.%d.%d" [GetMajor $version2] [GetMinor $version2] 0]
         }
         return [package vcompare $version1 $version2]
+    }
+
+    proc VersionCheck { version1 cmp version2 } {
+        set retVal [VersionCompare $version1 $version2]
+        switch -exact -nocase -- $cmp {
+            "newer"      { if { $retVal > 0 }                 { return true } }
+            "newerequal" { if { $retVal > 0 || $retVal == 0 } { return true } }
+            "equal"      { if { $retVal == 0 }                { return true } }
+            "older"      { if { $retVal < 0 }                 { return true } }
+            "olderequal" { if { $retVal < 0 || $retVal == 0 } { return true } }
+            "default"    { ErrorAppend "VersionCheck: Invalid compare operator \"$cmp\"." "FATAL" }
+        }
+        return false
     }
 
     proc GetPlatformName { { useShortName false } } {
@@ -2500,7 +2736,16 @@ namespace eval BawtBuild {
 
     proc IsArm {} {
         set machine $::tcl_platform(machine)
-        if { $machine eq "arm64" } {
+        if { $machine eq "arm64" || $machine eq "aarch64" } {
+            return true
+        } else {
+            return false
+        }
+    }
+
+    proc IsRiscV {} {
+        set machine $::tcl_platform(machine)
+        if { $machine eq "riscv64" } {
             return true
         } else {
             return false
@@ -2783,26 +3028,26 @@ namespace eval BawtBuild {
     proc SetTclVersion { version } {
         variable sBuildOpts
 
-        set sBuildOpts(TclVersion) $version
+        set sBuildOpts(Version,Tcl) $version
     }
 
     proc GetTclVersion {} {
         variable sBuildOpts
 
-        return $sBuildOpts(TclVersion)
+        return $sBuildOpts(Version,Tcl)
     }
 
     proc SetTkVersion { version } {
         variable sBuildOpts
 
-        set sBuildOpts(TkVersion) $version
+        set sBuildOpts(Version,Tk) $version
     }
 
     proc GetTkVersion {} {
         variable sBuildOpts
 
-        if { [info exists sBuildOpts(TkVersion)] } {
-            return $sBuildOpts(TkVersion)
+        if { [info exists sBuildOpts(Version,Tk)] } {
+            return $sBuildOpts(Version,Tk)
         } else {
             return [GetTclVersion]
         }
@@ -2837,37 +3082,67 @@ namespace eval BawtBuild {
     proc SetOsgVersion { version } {
         variable sBuildOpts
 
-        set sBuildOpts(OsgVersion) $version
+        set sBuildOpts(Version,Osg) $version
     }
 
     proc GetOsgVersion {} {
         variable sBuildOpts
 
-        return $sBuildOpts(OsgVersion)
+        return $sBuildOpts(Version,Osg)
     }
 
     proc SetVsgVersion { version } {
         variable sBuildOpts
 
-        set sBuildOpts(VsgVersion) $version
+        set sBuildOpts(Version,Vsg) $version
     }
 
     proc GetVsgVersion {} {
         variable sBuildOpts
 
-        return $sBuildOpts(VsgVersion)
+        return $sBuildOpts(Version,Vsg)
     }
 
     proc SetImgVersion { version } {
         variable sBuildOpts
 
-        set sBuildOpts(ImgVersion) $version
+        set sBuildOpts(Version,Img) $version
     }
 
     proc GetImgVersion {} {
         variable sBuildOpts
 
-        return $sBuildOpts(ImgVersion)
+        return $sBuildOpts(Version,Img)
+    }
+
+    proc SetLibraryVersion { libName version } {
+        variable sBuildOpts
+
+        set sBuildOpts(Version,$libName) $version
+    }
+
+    proc GetLibraryVersion { libName } {
+        variable sBuildOpts
+
+        if { [info exists sBuildOpts(Version,$libName)] } {
+            return $sBuildOpts(Version,$libName)
+        }
+        return ""
+    }
+
+    proc SetLibraryZipFile { libName zipFile } {
+        variable sBuildOpts
+
+        set sBuildOpts(ZipFile,$libName) $zipFile
+    }
+
+    proc GetLibraryZipFile { libName } {
+        variable sBuildOpts
+
+        if { [info exists sBuildOpts(ZipFile,$libName)] } {
+            return $sBuildOpts(ZipFile,$libName)
+        }
+        return ""
     }
 
     proc SetTclDir { dir } {
@@ -2953,7 +3228,14 @@ namespace eval BawtBuild {
     proc _GetTclTkLibName { tclOrTk libVersion } {
         set debugSuffix ""
         if { [IsDebugBuild] && [IsWindows] } {
-            set debugSuffix "g"
+            if { [string match "*tk*" $tclOrTk] } {
+                set tclOrTkVersion [GetMajor [GetTkVersion]]
+            } else {
+                set tclOrTkVersion [GetMajor [GetTclVersion]]
+            }
+            if { $tclOrTkVersion < 9 } {
+                set debugSuffix "g"
+            }
         }
         set libName [format "%s%s%s" $tclOrTk [GetMajorMinor $libVersion] $debugSuffix]
         return $libName
@@ -2964,25 +3246,33 @@ namespace eval BawtBuild {
     }
 
     proc GetTkLibName { libVersion { stub "" } } {
-        return [_GetTclTkLibName "tk$stub" $libVersion]
+        set name "tk$stub"
+        if { ( [GetMajor [GetTclVersion]] >= 9 ) && ( [GetMajor [GetTkVersion]] >= 9 ) } {
+            set name [format "tcl%dtk%s" [GetMajor [GetTclVersion]] $stub]
+        }
+        return [_GetTclTkLibName $name $libVersion]
     }
 
     proc GetTclStubLib { libVersion { compilerType "gcc" } } {
         set tclLibDir [GetDevTclLibDir]
         set debugSuf [list ""]
-        if { [IsDebugBuild] && [IsWindows] } {
+        if { [IsDebugBuild] && [IsWindows] && [GetMajor [GetTclVersion]] < 9 } {
             set debugSuf [list "g" ""]
         }
+        # Tcl9 does not add the major and minor version to the file name.
+        set versList [list [GetMajorMinor $libVersion] ""]
         foreach suf $debugSuf {
-            set libName [format "tclstub%s%s" [GetMajorMinor $libVersion] $suf]
-            if { $compilerType eq "vs" && [IsWindows] } {
-                set stubName [format "%s.lib"  $libName]
-            } else {
-                set stubName [format "lib%s.a" $libName]
-            }
-            set stubFile [file join $tclLibDir $stubName]
-            if { [file exists $stubFile] } {
-                return $stubFile
+            foreach vers $versList {
+                set libName [format "tclstub%s%s" $vers $suf]
+                if { $compilerType eq "vs" && [IsWindows] } {
+                    set stubName [format "%s.lib"  $libName]
+                } else {
+                    set stubName [format "lib%s.a" $libName]
+                }
+                set stubFile [file join $tclLibDir $stubName]
+                if { [file exists $stubFile] } {
+                    return $stubFile
+                }
             }
         }
         ErrorAppend "GetTclStubLib: No Tcl stub file in $tclLibDir found." "FATAL"
@@ -2991,19 +3281,24 @@ namespace eval BawtBuild {
     proc GetTkStubLib { libVersion { compilerType "gcc" } } {
         set tclLibDir [GetDevTclLibDir]
         set debugSuf [list ""]
-        if { [IsDebugBuild] && [IsWindows] } {
+        if { [IsDebugBuild] && [IsWindows] && [GetMajor [GetTkVersion]] < 9 } {
             set debugSuf [list "g" ""]
         }
+        # Tcl9 does not add the major and minor version to the file name.
+        set versList [list [GetMajorMinor $libVersion] ""]
         foreach suf $debugSuf {
-            set libName [format "tkstub%s%s" [GetMajorMinor $libVersion] $suf]
-            if { $compilerType eq "vs" && [IsWindows] } {
-                set stubName [format "%s.lib"  $libName]
-            } else {
-                set stubName [format "lib%s.a" $libName]
-            }
-            set stubFile [file join $tclLibDir $stubName]
-            if { [file exists $stubFile] } {
-                return $stubFile
+            foreach vers $versList {
+                set libName [format "tkstub%s%s" $vers $suf]
+                if { $compilerType eq "vs" && [IsWindows] } {
+                    set stubName [format "%s.lib"  $libName]
+                } else {
+                    set stubName [format "lib%s.a" $libName]
+                }
+                Log "Looking for $stubName" 6 false
+                set stubFile [file join $tclLibDir $stubName]
+                if { [file exists $stubFile] } {
+                    return $stubFile
+                }
             }
         }
         ErrorAppend "GetTkStubLib: No Tk stub file in $tclLibDir found." "FATAL"
@@ -3012,18 +3307,25 @@ namespace eval BawtBuild {
     proc _GetTclshWishName { tclshOrWish libName { libVersion "" } } {
         set debugSuffix ""
         if { [IsDebugBuild] && [IsWindows] } {
-            set debugSuffix "g"
+            if { [GetMajor [GetTclVersion]] == 8 && [GetMinor [GetTclVersion]] <= 6 } {
+                set debugSuffix "g"
+            }
         }
         set threadSuffix ""
-        if { [IsWindows] && [UseWinCompiler $libName "vs"] } {
+        if { [IsWindows] && [UseWinCompiler $libName "vs"] && \
+             [GetMajor [GetTclVersion]] == 8 && [GetMinor [GetTclVersion]] < 7 } {
             set threadSuffix "t"
+        }
+        set staticSuffix ""
+        if { [IsWindows] && [string tolower [GetUserConfigValue $libName "Static"]] eq "on" } {
+            set staticSuffix "s"
         }
         if { $libVersion eq "" } {
             set versionStr ""
         } else {
             set versionStr [GetMajorMinor $libVersion]
         }
-        set name [format "%s%s%s%s%s" $tclshOrWish $versionStr $threadSuffix $debugSuffix [GetExeSuffix]]
+        set name [format "%s%s%s%s%s%s" $tclshOrWish $versionStr $staticSuffix $threadSuffix $debugSuffix [GetExeSuffix]]
         return $name
     }
 
@@ -3054,7 +3356,15 @@ namespace eval BawtBuild {
     }
 
     proc GetPngLibDir {} {
-        foreach libDir { /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu } {
+        set libDirs [list \
+            "/usr/lib" \
+            "/usr/lib64" \
+            "/usr/lib/x86_64-linux-gnu" \
+            "/usr/lib/aarch64-linux-gnu" \
+            "/usr/lib/arm-linux-gnueabihf" \
+            "/usr/lib/riscv64-linux-gnu" \
+        ]
+        foreach libDir $libDirs {
             set fileList [glob -nocomplain -type f $libDir/libpng*.so]
             if { [llength $fileList] != 0 } {
                 return $libDir
@@ -3075,7 +3385,7 @@ namespace eval BawtBuild {
         return [file join [GetOutputLogDir] "_${libName}_[GetBuildType].progress"]
     }
 
-    proc _BawtProgress { libName { onOff -1 } } {
+    proc _BawtProgressFile { libName { onOff -1 } } {
         set runFile [_GetBawtProgressFile $libName]
         if { $onOff == -1 } {
             return [file exists $runFile]
@@ -3136,7 +3446,7 @@ namespace eval BawtBuild {
                     UpdateLib $libName "Build file newer than build dir"
                 } elseif { [file mtime $buildDir] < [file mtime $zipFileOrDir] } {
                     UpdateLib $libName "Source file newer than build dir"
-                } elseif { [_BawtProgress $libName] } {
+                } elseif { [_BawtProgressFile $libName] } {
                     UpdateLib $libName "Progress file existent"
                 } elseif { $libNeedsUpdate ne "" } {
                     if { ! [string equal -nocase $libNeedsUpdate "All"] || \
@@ -3151,7 +3461,11 @@ namespace eval BawtBuild {
                     Log "Clean $libName ($buildType)"
                     CleanLib $libName
                 }
-                Log "Build $libName [GetLibVersion $libName] ($buildType)"
+                if { [UseStage "Test"] } {
+                    Log "Test $libName [GetLibVersion $libName]"
+                } else {
+                    Log "Build $libName [GetLibVersion $libName] ($buildType)"
+                }
                 if { ! [UseStage "Check"] } {
                     CreateDefaultDirs
                 }
@@ -3163,14 +3477,30 @@ namespace eval BawtBuild {
                         DirCreate $buildDir
                         DirCreate $instDir
                     }
-                    _BawtProgress $libName 1
-                    WriteBuildLog $libName false "> Start Build_$libName\n"
-                    set retVal [eval [list Build_$libName $libName $libVersion $buildDir $instDir $devDir $distDir]]
+                    set logType "Test"
+                    if { [UseStage "Test"] } {
+                        if { [info commands Test_$libName] eq "" } {
+                            SetBuildError $libName "No Test proc"
+                            Log [format "End %s: Excluded from test (%s)" $libName [GetBuildError $libName]]
+                            return -1.0
+                        }
+                    } else {
+                        set logType "Build"
+                        _BawtProgressFile $libName 1
+                    }
+                    WriteBuildLog $libName false "> Start ${logType}_$libName\n"
+                    if { [UseStage "Test"] } {
+                        set retVal [eval [list Test_$libName $libName $libVersion $buildDir $instDir $devDir $distDir]]
+                    } else {
+                        set retVal [eval [list Build_$libName $libName $libVersion $buildDir $instDir $devDir $distDir]]
+                    }
                     if { $retVal } {
                         _WriteMSysStartConsoleFile $libName $buildDir
                     }
-                    WriteBuildLog $libName true "\n> End Build_$libName"
-                    _BawtProgress $libName 0
+                    WriteBuildLog $libName true "\n> End ${logType}_$libName"
+                    if { ! [UseStage "Test"] } {
+                        _BawtProgressFile $libName 0
+                    }
                 }
             } else {
                 Log [format "End %s %s: Simulation mode" $libName [GetLibVersion $libName]]
@@ -3260,7 +3590,7 @@ namespace eval BawtBuild {
         }
 
         set archOpt ""
-        if { [VersionCompare "3.14.0" $cmakeVersion] < 0 } {
+        if { [VersionCheck $cmakeVersion "newer" "3.14.0"] } {
             if { $isVsGen } {
                 if { [Is64Bit] } {
                     set archOpt "-Ax64"
@@ -3355,6 +3685,27 @@ namespace eval BawtBuild {
         } else {
             DosRun $libName $originator $buildDir "$cmd"
         }
+    }
+
+    proc NMakeTest { libName buildDir makeFile buildTarget { makeFlags "" } } {
+        if { $makeFlags eq "" } {
+            set makeFlags "TCLLIBPATH=[GetDevTclLibDir]"
+        }
+        Log "NMakeTest" 2
+        Log "Build directory: $buildDir"     4 false
+        Log "Build target   : $buildTarget"  4 false
+        if { $makeFlags ne "" } {
+            Log "Make flags     : $makeFlags"  4 false
+        }
+
+        set    cmd ""
+        append cmd "CALL nmake.exe "
+        append cmd     "/nologo "
+        append cmd     "/f \"$makeFile\" "
+        append cmd     "$makeFlags $buildTarget "
+
+        set originator "NMakeTest[_GetBuildCount $libName NMakeTest]"
+        DosRun $libName $originator $buildDir "$cmd"
     }
 
     proc NMakeBuild { libName sourceDir makeFile args } {
@@ -3562,6 +3913,27 @@ namespace eval BawtBuild {
         return $result
     }
 
+    proc MSysTest { libName buildDir buildTarget { makeFlags "" } } {
+        set buildDirMSys [MSysPath $buildDir]
+
+        if { $makeFlags eq "" } {
+            set makeFlags "TCLLIBPATH=[MSysPath [GetDevTclLibDir]]"
+        }
+        Log "MSysTest" 2
+        Log "Build directory: $buildDirMSys"  4 false
+        Log "Build target   : $buildTarget"   4 false
+        if { $makeFlags ne "" } {
+            Log "Make flags     : $makeFlags"  4 false
+        }
+
+        set cmd ""
+        append cmd "cd $buildDirMSys ; "
+        append cmd "make $makeFlags $buildTarget "
+
+        set originator "MSysTest[_GetBuildCount $libName MSysTest]"
+        MSysRun $libName $originator $buildDir "$cmd"
+    }
+
     proc MSysBuild { libName buildDir buildTarget { buildFlags "" } } {
         set buildDirMSys [MSysPath $buildDir]
 
@@ -3627,6 +3999,11 @@ namespace eval BawtBuild {
         Log "Build directory  : $buildDir"   4 false
         Log "Install directory: $installDir" 4 false
 
+        if { [string trim $cflags] eq "" } {
+            if { [GetUniversalCFlags] ne "" } {
+                set cflags "CFLAGS='[GetUniversalCFlags]' "
+            }
+        }
         set cmd ""
         append cmd "$cflags "
         append cmd "$buildDirMSys/configure "
@@ -3783,7 +4160,7 @@ namespace eval BawtBuild {
     }
 
     proc IsGccCompilerNewer { gccVersion } {
-        if { [VersionCompare $gccVersion [GetGccCompilerVersion]] < 0 } {
+        if { [VersionCheck [GetGccCompilerVersion] "newer" $gccVersion] } {
             return true
         } else {
             return false
@@ -3961,6 +4338,7 @@ namespace eval BawtMain {
     namespace export GetUseEnvVars UseEnvVar
     namespace export AppendBuildType GetBuildTypes
     namespace export SetExcludeOption GetExcludeOption
+    namespace export SetBuildOptions GetBuildOptions
     namespace export SetExcludeCompiler GetExcludeCompiler
     namespace export SetWinCompiler GetWinCompiler UseWinCompiler
     namespace export SetInputRootDir GetInputRootDir
@@ -4248,9 +4626,17 @@ namespace eval BawtMain {
         }
     }
 
+    proc HaveTestProc { libName } {
+        if { [info commands Test_$libName] eq "" } {
+            return "No"
+        } else {
+            return "Yes"
+        }
+    }
+
     proc PrintLibNames {} {
         # First determine maximum string length of each column for pretty output.
-        set typeList [list # Name Version Platforms Compilers Dependencies ScriptAuthor Homepage Stages]
+        set typeList [list # Name Version Platforms Compilers Dependencies ScriptAuthor Homepage Excludes Options Stages HaveTest]
         foreach type $typeList {
             set max($type) [string length $type]
         }
@@ -4265,7 +4651,10 @@ namespace eval BawtMain {
             set opt($count,Dependencies) [join [GetLibDependencies $libName]]
             set opt($count,ScriptAuthor) [GetScriptAuthorName $libName]
             set opt($count,Homepage)     [GetLibHomepage $libName]
+            set opt($count,Excludes)     [GetExcludeOption $libName]
+            set opt($count,Options)      [GetBuildOptions $libName]
             set opt($count,Stages)       [GetUsedStages $libName]
+            set opt($count,HaveTest)     [HaveTestProc $libName]
             
             foreach type $typeList {
                 if { [string length $opt($count,$type)] > $max($type) } {
@@ -4287,7 +4676,7 @@ namespace eval BawtMain {
              [string repeat "-" $max(#)] [string repeat "-" $max(Name)] [string repeat "-" $max(Version)]]
         foreach option [GetCheckOptions] {
             if { [info exists opt(0,$option)] } {
-                puts -nonewline [format "%s" [string repeat "-" $max($option)]]
+                puts -nonewline [format "%s" [string repeat "-" [expr { $max($option) + 1}]]]
             }
         }
         puts ""
@@ -4329,7 +4718,7 @@ namespace eval BawtMain {
         append msg "--help          : Print this help message and exit.\n"
         append msg "--version       : Print version number and exit.\n"
         append msg "--procs         : Print all available procedures and exit.\n"
-        append msg "--proc <string> : Print documentation of specified procedure and exit.\n"
+        append msg "--proc <str>    : Print documentation of specified procedure and exit.\n"
         append msg "--loglevel <int>: Specify log message verbosity.\n"
         append msg "                  Choices: 0 - 4. Default: [GetLogLevel].\n"
         append msg "--nologtime     : Do not write time strings with log messages.\n"
@@ -4343,6 +4732,9 @@ namespace eval BawtMain {
         append msg "--wincompilers  : Additionally print supported Windows compilers.\n"
         append msg "--authors       : Additionally print script authors.\n"
         append msg "--homepages     : Additionally print library homepages.\n"
+        append msg "--excludes      : Additionally print platform specific excluded libraries.\n"
+        append msg "--options       : Additionally print library build options.\n"
+        append msg "--havetest      : Additionally print test procedure availability.\n"
         append msg "--dependencies  : Additionally print library dependencies.\n"
         append msg "--dependency    : Print dependencies of specified target libraries.\n"
         append msg "\n"
@@ -4363,97 +4755,116 @@ namespace eval BawtMain {
         append msg "--simulate  : Simulate update action without actually building libraries.\n"
         append msg "--touch     : Set modification times of library build directories to current time.\n"
         append msg "\n"
+        append msg "--test      : Perform library specific test scripts.\n"
+        append msg "\n"
         append msg "Build configuration options:\n"
-        append msg "--architecture <string>: Build for specified processor architecture.\n"
-        append msg "                         Choices: [GetValidArchitectures].\n"
-        append msg "                         Default: [GetArchitecture].\n"
-        append msg "--compiler <string>    : Build with specified compiler version.\n"
-        append msg "                         Choices: gcc vs2008 vs2010 vs2012 vs2013 vs2015 vs2017 vs2019 vs2022.\n"
-        append msg "                         Specify primary and secondary compiler by adding a plus sign\n"
-        append msg "                         inbetween. Example: gcc+vs2013.\n"
-        append msg "                         Default: [GetCompilerVersion].\n"
-        append msg "--gccversion <string>  : Build with specified MinGW gcc version. Windows only.\n"
-        append msg "                         Choices: 4.9.2 5.2.0 7.2.0 8.1.0 11.2.0.\n"
-        append msg "                         Default: [GetMingwGccVersion].\n"
-        append msg "--msysversion <string> : Build with specified MSYS version. Windows only.\n"
-        append msg "                         Choices: 1 2.\n"
-        append msg "                         Default: Version 2 if available, otherwise version 1.\n"
-        append msg "--tclversion <string>  : Build Tcl, Tk and Tclkit for specified version.\n"
-        append msg "                         Choices: 8.6.7 - 8.6.13 8.7.a5.\n"
-        append msg "                         Default: [GetTclVersion].\n"
-        append msg "--tkversion <string>   : Build Tk and Tclkit for specified version.\n"
-        append msg "                         Choices: 8.6.7 - 8.6.13 8.7.a5.\n"
-        append msg "                         Default: [GetTkVersion].\n"
-        append msg "--imgversion <string>  : Build Img for specified version.\n"
-        append msg "                         Choices: 1.4.9 1.4.10 1.4.11 1.4.13 1.4.14 1.5.0.\n"
-        append msg "                         Default: [GetImgVersion].\n"
-        append msg "--osgversion <string>  : Build OpenSceneGraph for specified version.\n"
-        append msg "                         Choices: 3.4.1 3.6.5.\n"
-        append msg "                         Default: [GetOsgVersion].\n"
-        append msg "--vsgversion <string>  : Build VulkanSceneGraph for specified version.\n"
-        append msg "                         Choices: 1.0.0.\n"
-        append msg "                         Default: [GetVsgVersion].\n"
-        append msg "--buildtype <string>   : Use specified build type.\n"
-        append msg "                         Choices: [GetValidBuildTypes].\n"
-        append msg "                         Default: Specified in setup file.\n"
-        append msg "--exclude <lib>        : Force exclusion of build for specified library name.\n"
+        append msg "--architecture <str>    : Build for specified processor architecture.\n"
+        append msg "                          Choices: [GetValidArchitectures].\n"
+        append msg "                          Default: [GetArchitecture].\n"
+        append msg "--compiler <str>        : Build with specified compiler version.\n"
+        append msg "                          Choices: gcc vs2013 vs2015 vs2017 vs2019 vs2022.\n"
+        append msg "                          Specify primary and secondary compiler by adding a plus sign\n"
+        append msg "                          inbetween. Example: gcc+vs2022.\n"
+        append msg "                          Default: [GetCompilerVersion].\n"
+        append msg "--gccversion <str>      : Build with specified MinGW gcc version. Windows only.\n"
+        append msg "                          Choices: 7.2.0 8.1.0 11.2.0 12.2.0 13.2.0 14.2.0.\n"
+        append msg "                          Default: [GetMingwGccVersion].\n"
+        append msg "--msysversion <str>     : Build with specified MSYS version. Windows only.\n"
+        append msg "                          Choices: 1 2.\n"
+        append msg "                          Default: Version 2 if available, otherwise version 1.\n"
+        append msg "--tclversion <str>      : Build Tcl, Tk and Tclkit for specified version.\n"
+        append msg "                          Choices: 8.6.7 - 8.6.16 9.0.1.\n"
+        append msg "                          Default: [GetTclVersion].\n"
+        append msg "--tkversion <str>       : Build Tk and Tclkit for specified version.\n"
+        append msg "                          Choices: 8.6.7 - 8.6.16 9.0.1.\n"
+        append msg "                          Default: [GetTkVersion].\n"
+        append msg "--imgversion <str>      : Build Img for specified version.\n"
+        append msg "                          Choices: 1.4.13 - 1.4.17 2.0.1.\n"
+        append msg "                          Default: [GetImgVersion].\n"
+        append msg "--osgversion <str>      : Build OpenSceneGraph for specified version.\n"
+        append msg "                          Choices: 3.4.1 3.6.5.\n"
+        append msg "                          Default: [GetOsgVersion].\n"
+        append msg "--vsgversion <str>      : Build VulkanSceneGraph for specified version.\n"
+        append msg "                          Choices: 1.0.0.\n"
+        append msg "                          Default: [GetVsgVersion].\n"
+        append msg "--libversion <lib> <str>: Build library for specified version.\n"
+        append msg "                          Overwrites values specified in Setup file.\n"
+        append msg "                          Default: As specified in Setup file.\n"
+        append msg "--zipfile <lib> <str>   : Build library from specified file or directory.\n"
+        append msg "                          Overwrites values specified in Setup file.\n"
+        append msg "                          Default: As specified in Setup file.\n"
+        append msg "--buildtype <str>       : Use specified build type.\n"
+        append msg "                          Choices: [GetValidBuildTypes].\n"
+        append msg "                          Default: Specified in setup file.\n"
+        append msg "--universal             : Enable universal binary builds.\n"
+        append msg "                          Available for Darwin only.\n"
+        append msg "                          Default: Not enabled.\n"
+        append msg "--sanitizer             : Enable Address Sanitizer libasan.\n"
+        append msg "                          Only valid with build type Debug.\n"
+        append msg "                          Default: Not enabled.\n"
+        append msg "--exclude <lib>         : Force exclusion of build for specified library name.\n"
         append msg "\n"
-        append msg "--wincc <lib> <string> : Use specified Windows compiler, if supported by build script.\n"
-        append msg "                         Choices: \"gcc\" \"vs\".\n"
-        append msg "--sdk <lib> <string>   : Use specified Microsoft SDK version.\n"
-        append msg "                         To use the SDK version for all libraries,\n"
-        append msg "                         specify \"all\" as library name.\n"
-        append msg "--copt <lib> <string>  : Specify library specific configuration option.\n"
-        append msg "--user <lib> <string>  : Specify library specific user build file.\n"
+        append msg "--wincc <lib> <str>     : Use specified Windows compiler, if supported by build script.\n"
+        append msg "                          Choices: \"gcc\" \"vs\".\n"
+        append msg "--sdk <lib> <str>       : Use specified Microsoft SDK version.\n"
+        append msg "                          To use the SDK version for all libraries,\n"
+        append msg "                          specify \"all\" as library name.\n"
+        append msg "--copt <lib> <str>      : Specify library specific configuration option.\n"
+        append msg "--user <lib> <str>      : Specify library specific user build file.\n"
         append msg "\n"
-        append msg "--url <string>         : Specify BAWT download server.\n"
-        append msg "                         Default: [GetBawtUrl].\n"
-        append msg "--toolsdir <string>    : Specify directory containing MSys/MinGW.\n"
-        append msg "                         Default: [GetOutputToolsDir].\n"
-        append msg "--rootdir <string>     : Specify build output root directory.\n"
-        append msg "                         Default: [GetOutputRootDir].\n"
-        append msg "--libdir <string>      : Add a directory containing library source and build files.\n"
-        append msg "                         Default: [GetInputLibsDirs].\n"
-        append msg "--distdir <string>     : Specify distribution root directory.\n"
-        append msg "                         Default: [GetOutputDistDir].\n"
-        append msg "--finalizefile <string>: Specify file with user supplied Finalize procedure.\n"
-        append msg "                         Default: None.\n"
+        append msg "--url <str>             : Specify BAWT download server.\n"
+        append msg "                          Default: [GetBawtUrl].\n"
+        append msg "--cacert <str>          : Use specified certificate file as parameter to curl calls.\n"
+        append msg "                          Default: None.\n"
+        append msg "--toolsdir <str>        : Specify directory containing MSys/MinGW.\n"
+        append msg "                          Default: [GetOutputToolsDir].\n"
+        append msg "--rootdir <str>         : Specify build output root directory.\n"
+        append msg "                          Default: [GetOutputRootDir].\n"
+        append msg "--libdir <str>          : Add a directory containing library source and build files.\n"
+        append msg "                          Default: [GetInputLibsDirs].\n"
+        append msg "--distdir <str>         : Specify distribution root directory.\n"
+        append msg "                          Default: [GetOutputDistDir].\n"
+        append msg "--finalizefile <str>    : Specify file with user supplied Finalize procedure.\n"
+        append msg "                          Default: None.\n"
         append msg "\n"
-        append msg "--sort <string>        : Sort libraries according to specified sorting mode.\n"
-        append msg "                         Choices: [GetValidSortModes].\n"
-        append msg "                         Default: [lindex [GetValidSortModes] 0].\n"
-        append msg "--noversion            : Do not use version number for Tcl package directories.\n"
-        append msg "                         Default: Library name and version number.\n"
-        append msg "--noexit               : Do not exit build process after fatal error, but try to continue.\n"
-        append msg "                         Default: Exit build process after a fatal error.\n"
-        append msg "--noimportlibs         : Do not create import libraries on Windows.\n"
-        append msg "                         Default: Create import libraries. Needs Visual Studio.\n"
-        append msg "--noruntimelibs        : Do not copy VisualStudio runtime libraries.\n"
-        append msg "                         Default: Copy runtime libraries. Needs Visual Studio.\n"
-        append msg "--nostrip              : Do not strip libraries in distribution directory.\n"
-        append msg "                         Default: Strip libraries.\n"
-        append msg "--noonline             : Do not check or download from online repository.\n"
-        append msg "                         Default: Use [GetBawtUrl].\n"
-        append msg "--norecursive          : Do not check recursive dependencies.\n"
-        append msg "                         Default: Use recursive dependencies.\n"
-        append msg "--nosubdirs            : Do not create compiler and architecture sub directories.\n"
-        append msg "                         Default: Create compiler and architecture sub directories.\n"
-        append msg "--nouserbuilds         : Do not consider user build files.\n"
-        append msg "                         Default: User build files named \"LibraryName_User.bawt\".\n"
+        append msg "--sort <str>            : Sort libraries according to specified sorting mode.\n"
+        append msg "                          Choices: [GetValidSortModes].\n"
+        append msg "                          Default: [lindex [GetValidSortModes] 0].\n"
+        append msg "--noversion             : Do not use version number for Tcl package directories.\n"
+        append msg "                          Default: Library name and version number.\n"
+        append msg "--noexit                : Do not exit build process after fatal error, but try to continue.\n"
+        append msg "                          Default: Exit build process after a fatal error.\n"
+        append msg "--noimportlibs          : Do not create import libraries on Windows.\n"
+        append msg "                          Default: Create import libraries. Needs Visual Studio.\n"
+        append msg "--noruntimelibs         : Do not copy VisualStudio runtime libraries.\n"
+        append msg "                          Default: Copy runtime libraries. Needs Visual Studio.\n"
+        append msg "--nostrip               : Do not strip libraries in distribution directory.\n"
+        append msg "                          Default: Strip libraries.\n"
+        append msg "--noonline              : Do not check or download from online repository.\n"
+        append msg "                          Default: Use [GetBawtUrl].\n"
+        append msg "--norecursive           : Do not check recursive dependencies.\n"
+        append msg "                          Default: Use recursive dependencies.\n"
+        append msg "--nosubdirs             : Do not create compiler and architecture sub directories.\n"
+        append msg "                          Default: Create compiler and architecture sub directories.\n"
+        append msg "--nouserbuilds          : Do not consider user build files.\n"
+        append msg "                          Default: User build files named \"LibraryName_User.bawt\".\n"
         append msg "\n"
-        append msg "--iconfile <string>    : Use specified icon file for tclkits and starpacks.\n"
-        append msg "                         Default: Standard tclkit icon. Windows only.\n"
-        append msg "--resourcefile <string>: Use specified resource file for tclkits and starpacks.\n"
-        append msg "                         Default: Standard tclkit resource file. Windows only.\n"
-        append msg "--certfile <string>    : Use specified certification file for code signing starpacks.\n"
-        append msg "                         Default: No code signing. Windows only.\n"
-        append msg "--timestampurl <string>: Use specified timestamp server for code signing starpacks.\n"
-        append msg "                         Default: [GetTclkitTimeStampUrl All]. Windows only.\n"
+        append msg "--iconfile <str>        : Use specified icon file for tclkits and starpacks.\n"
+        append msg "                          Default: Standard tclkit icon. Windows only.\n"
+        append msg "--resourcefile <str>    : Use specified resource file for tclkits and starpacks.\n"
+        append msg "                          Default: Standard tclkit resource file. Windows only.\n"
+        append msg "--certfile <str>        : Use specified certification file for code signing starpacks.\n"
+        append msg "                          Default: No code signing. Windows only.\n"
+        append msg "--timestampurl <str>    : Use specified timestamp server for code signing starpacks.\n"
+        append msg "                          Default: [GetTclkitTimeStampUrl All]. Windows only.\n"
+        append msg "                          Alternative: http://timestamp.sectigo.com\n"
         append msg "\n"
-        append msg "--numjobs <int>        : Number of parallel compile jobs.\n"
-        append msg "                         Default: [GetNumJobs]\n"
-        append msg "--timeout <float>      : Number of seconds to try renaming or deleting directories.\n"
-        append msg "                         Default: [GetTimeout s]\n"
+        append msg "--numjobs <int>         : Number of parallel compile jobs for all libraries.\n"
+        append msg "                          Default: [GetNumJobs]\n"
+        append msg "--libjobs <lib> <int>   : Number of parallel compile jobs for specified library.\n"
+        append msg "                          Default: [GetNumJobs]\n"
+        append msg "--timeout <float>       : Number of seconds to try renaming or deleting directories.\n"
+        append msg "                          Default: [GetTimeout s]\n"
         return $msg
     }
 
@@ -4465,7 +4876,7 @@ namespace eval BawtMain {
     }
 
     proc GetVersion {} {
-        return "2.3.1"
+        return "3.0.1"
     }
 
     proc PrintVersion { { versionNumOnly false } } {
@@ -4474,7 +4885,7 @@ namespace eval BawtMain {
             puts "$versionNum"
         } else {
             puts "BAWT $versionNum"
-            puts "Copyright 2016-2023 Paul Obermeier"
+            puts "Copyright 2016-2025 Paul Obermeier"
         }
     }
 
@@ -4484,7 +4895,7 @@ namespace eval BawtMain {
         } elseif { [GetMinor $versionNum] !=  [GetMinor [GetVersion]] } {
             ErrorAppend "Remote minor version $versionNum different to minor local version [GetVersion]" "FATAL"
         } else {
-            if { [VersionCompare $versionNum [GetVersion]] > 0 } {
+            if { [VersionCheck $versionNum "newer" [GetVersion]] } {
                 ErrorAppend "Remote version $versionNum newer than local version [GetVersion]" "Warning"
             }
         }
@@ -4914,7 +5325,7 @@ namespace eval BawtMain {
         variable sOpts
 
         if { [lsearch -exact $sOpts(EnvVarPath) $varValue] < 0 } {
-            Log "AddToPathEnv : $varValue" 2 false
+            Log "AddToPathEnv: $varValue" 2 false
             lappend sOpts(EnvVarPath) $varValue
         }
     }
@@ -4995,6 +5406,24 @@ namespace eval BawtMain {
         variable sOpts
 
         return $sOpts(BuildTypes,$libName)
+    }
+
+    proc SetBuildOptions { libName options } {
+        variable sOpts
+
+        set libName [string tolower $libName]
+        set sOpts(BuildOptions,$libName) $options
+    }
+
+    proc GetBuildOptions { libName } {
+        variable sOpts
+
+        set libName [string tolower $libName]
+        if { [info exists sOpts(BuildOptions,$libName)] } {
+            return $sOpts(BuildOptions,$libName)
+        } else {
+            return ""
+        }
     }
 
     proc SetExcludeOption { libName option } {
@@ -5198,6 +5627,7 @@ namespace eval BawtMain {
         AddPath [Get7ZipDistDir]
         AddPath [GetCMakeDistDir]
         AddPath [GetSWIGDistDir]
+        AddPath [GetPandocDistDir]
         AddPath [file join [GetOutputDevDir] "bin"]
         AddPath [file join [GetOutputDevDir] "lib"]
         AddPath [file join [GetOutputDevDir] [GetTclBinDir]]
@@ -5298,6 +5728,22 @@ namespace eval BawtMain {
         }
     }
 
+    proc _ExcludeLibByVersion { excludeVersion libVersion } {
+        if { [GetMinor $excludeVersion] eq "" } {
+            # Only major version specified.
+            set libVersion [GetMajor $libVersion]
+        } elseif { [GetPatch $excludeVersion] eq "" } {
+            # Only major and minor version specified.
+            set libVersion [GetMajorMinor $libVersion "."]
+        }
+        set excludeVersion [UnifyVersionNumber $excludeVersion]
+        set libVersion     [UnifyVersionNumber $libVersion]
+        if { [VersionCheck $libVersion "equal" $excludeVersion] } {
+            return true
+        }
+        return false
+    }
+
     proc Setup { libName zipFile buildFile args } {
         # Check for existence of the library source code (either as a 7z file or directory)
         # as well as the according build file. If these do not exist in the library directory
@@ -5311,6 +5757,10 @@ namespace eval BawtMain {
 
         Log "Setup $libName" 2
 
+        if { [GetLibraryZipFile $libName] ne "" } {
+            # Override library source code with value specified on command line.
+            set zipFile [GetLibraryZipFile $libName]
+        }
         foreach libZipDir [GetInputLibsDirs] {
             Log "Looking for $zipFile in $libZipDir" 6 false
             # Note, that if zipFile is an absolute path,
@@ -5415,13 +5865,41 @@ namespace eval BawtMain {
         AppendBuildType  $libName "Release"
         append buildMsg "Release "
         # Parse optional arguments.
+        SetBuildOptions $libName $args
         foreach arg $args {
-            switch -exact -- $arg {
+            switch -glob -- $arg {
                 "Release" -
                 "Debug" {
                     # Additional build types
                     AppendBuildType $libName $arg
                     append buildMsg "$arg "
+                }
+                "NoGcc*" {
+                    # Exclude library from building with specified gcc version.
+                    set excludeVersion [string range $arg 5 end]
+                    if { [_ExcludeLibByVersion $excludeVersion [GetGccCompilerVersion]] } {
+                        SetExcludeOption $libName $arg
+                    }
+                }
+                "NoTcl*" {
+                    # Exclude library from building with specified Tcl version.
+                    set excludeVersion [string range $arg 5 end]
+                    if { [_ExcludeLibByVersion $excludeVersion [GetTclVersion]] } {
+                        SetExcludeOption $libName $arg
+                    }
+                }
+                "NoTk*" {
+                    # Exclude library from building with specified Tk version.
+                    set excludeVersion [string range $arg 4 end]
+                    if { [_ExcludeLibByVersion $excludeVersion [GetTkVersion]] } {
+                        SetExcludeOption $libName $arg
+                    }
+                }
+                "NoUniversal" {
+                    # Exclude library from building as universal binary.
+                    if { [UseUniversal] } {
+                        SetExcludeOption $libName $arg
+                    }
                 }
                 "NoWindows" -
                 "NoLinux" -
@@ -5437,6 +5915,22 @@ namespace eval BawtMain {
                     # Exclude library from building on specific OS using ARM machine type.
                     set endIndex [expr [string first "-" $arg] - 1]
                     if { [IsArm] && ( [GetPlatformName] eq [string range $arg 2 $endIndex] ) } {
+                        SetExcludeOption $libName $arg
+                    }
+                }
+                "NoLinux32-arm" {
+                    # Exclude library from building on Linux ARM in 32-bit.
+                    set endIndex [expr [string first "-" $arg] - 3]
+                    if { [Is32Bit] && [IsArm] && ( [GetPlatformName] eq [string range $arg 2 $endIndex] ) } {
+                        SetExcludeOption $libName $arg
+                    }
+		}
+                "NoWindows-riscv" -
+                "NoLinux-riscv" -
+                "NoDarwin-riscv" {
+                    # Exclude library from building on specific OS using RiscV machine type.
+                    set endIndex [expr [string first "-" $arg] - 1]
+                    if { [IsRiscV] && ( [GetPlatformName] eq [string range $arg 2 $endIndex] ) } {
                         SetExcludeOption $libName $arg
                     }
                 }
@@ -5491,6 +5985,11 @@ namespace eval BawtMain {
                 }
             }
         }
+        if { [GetLibraryVersion $libName] ne "" } {
+            # Override library version number with value specified on command line.
+            set version [GetLibraryVersion $libName]
+            SetLibVersion $libName $version
+        }
         Log "Version    : $version"  4 false
         Log "Build types: $buildMsg" 4 false
         if { [GetLibIndex $libName] >= 0 } {
@@ -5539,7 +6038,11 @@ namespace eval BawtMain {
                 set stageTitle "Stages"
             }
             if { ! [IsSimulationMode] } {
-                Log [format "#  : %-20s %-10s %-15s %s" "Library Name" "Version" "Build time" $stageTitle] 0 false
+                if { [UseStage "Test"] } {
+                    Log [format "#  : %-20s %-10s %-15s %s" "Library Name" "Version" "Test time" $stageTitle] 0 false
+                } else {
+                    Log [format "#  : %-20s %-10s %-15s %s" "Library Name" "Version" "Build time" $stageTitle] 0 false
+                }
             } else {
                 Log [format "#  : %-20s %-10s %-15s %s" "Library Name" "Version" "Build action" "Build cause"] 0 false
             }
@@ -5624,6 +6127,7 @@ set optSortMode [lindex [GetValidSortModes] 0]
 set optWinCompiler [list]
 set optUserConfigs [list]
 set optSdkVersions [list]
+set optJobConfigs  [list]
 
 while { $curArg < $argc } {
     set curParam [lindex $argv $curArg]
@@ -5670,6 +6174,15 @@ while { $curArg < $argc } {
         } elseif { $curOpt eq "homepages" } {
             set optHaveListOpt true
             AddCheckOption "Homepage"
+        } elseif { $curOpt eq "excludes" } {
+            set optHaveListOpt true
+            AddCheckOption "Excludes"
+        } elseif { $curOpt eq "options" } {
+            set optHaveListOpt true
+            AddCheckOption "Options"
+        } elseif { $curOpt eq "havetest" } {
+            set optHaveListOpt true
+            AddCheckOption "HaveTest"
         } elseif { $curOpt eq "sort" } {
             incr curArg
             if { [lsearch -exact -nocase [GetValidSortModes] [lindex $argv $curArg]] < 0 } {
@@ -5695,6 +6208,10 @@ while { $curArg < $argc } {
         } elseif { $curOpt eq "finalize" } {
             set optHaveActionOpt true
             EnableStage "Finalize"
+        } elseif { $curOpt eq "test" } {
+            set optHaveActionOpt true
+            DisableAllStages
+            EnableStage "Test"
         } elseif { $curOpt eq "complete" } {
             set optHaveActionOpt true
             EnableAllStages
@@ -5719,6 +6236,16 @@ while { $curArg < $argc } {
                 exit 1
             }
             set optNumJobs [lindex $argv $curArg]
+        } elseif { $curOpt eq "libjobs" } {
+            incr curArg
+            set jobOptLibName [lindex $argv $curArg]
+            incr curArg
+            set jobOptValue [lindex $argv $curArg]
+            if { ! [string is integer -strict $jobOptValue] || $jobOptValue < 1 } {
+                PrintUsage "Invalid $curParam value: \"$jobOptValue\""
+                exit 1
+            }
+            lappend optJobConfigs $jobOptLibName $jobOptValue
         } elseif { $curOpt eq "timeout" } {
             incr curArg
             if { ! [string is double -strict [lindex $argv $curArg]] || [lindex $argv $curArg] < 0.0 } {
@@ -5778,6 +6305,18 @@ while { $curArg < $argc } {
         } elseif { $curOpt eq "vsgversion" } {
             incr curArg
             SetVsgVersion [lindex $argv $curArg]
+        } elseif { $curOpt eq "libversion" } {
+            incr curArg
+            set versionLibName [lindex $argv $curArg]
+            incr curArg
+            set versionLibValue [lindex $argv $curArg]
+            SetLibraryVersion $versionLibName $versionLibValue
+        } elseif { $curOpt eq "zipfile" } {
+            incr curArg
+            set zipLibName [lindex $argv $curArg]
+            incr curArg
+            set zipLibValue [lindex $argv $curArg]
+            SetLibraryZipFile $zipLibName $zipLibValue
         } elseif { $curOpt eq "buildtype" } {
             incr curArg
             if { [lsearch -exact [GetValidBuildTypes] [lindex $argv $curArg]] < 0 } {
@@ -5785,9 +6324,16 @@ while { $curArg < $argc } {
                 exit 1
             }
             AppendBuildType ForceBuildType [lindex $argv $curArg]
+        } elseif { $curOpt eq "universal" } {
+            UseUniversal true
+        } elseif { $curOpt eq "sanitizer" } {
+            UseSanitizer true
         } elseif { $curOpt eq "url" } {
             incr curArg
             SetBawtUrl [lindex $argv $curArg]
+        } elseif { $curOpt eq "cacert" } {
+            incr curArg
+            SetCurlCertificate [lindex $argv $curArg]
         } elseif { $curOpt eq "rootdir" } {
             incr curArg
             SetOutputRootDir [lindex $argv $curArg]
@@ -5935,6 +6481,16 @@ if { $optLogLevel >= 0 } {
 Log "BAWT command line options:" 0 false
 BawtBuild::_LogCmd $argv
 
+if { [UseUniversal] && ! [IsDarwin] } {
+    PrintUsage "Universal binaries only valid for Darwin."
+    exit 1
+}
+
+if { [UseSanitizer] && [IsReleaseBuild] } {
+    PrintUsage "Sanitizer only valid with Debug build type."
+    exit 1
+}
+
 if { ! [file exists [GetSetupFile]] } {
     PrintUsage "No valid setup file specified: [GetSetupFile]"
     exit 1
@@ -5952,6 +6508,9 @@ if { [llength $targetList] == 0 && ! [UseStage "Check"] } {
 
 if { $optNumJobs >= 0 } {
     SetNumJobs $optNumJobs
+}
+foreach { libName value } $optJobConfigs {
+    SetNumJobs $value $libName
 }
 
 if { $optShowLogViewer && [GetLogLevel] > 1 } {
@@ -5983,14 +6542,6 @@ if { [UseOnlineRepository] && ! [UseStage "Check"] } {
 Log "Setup (File [GetSetupFile]) "
 source [GetSetupFile]
 
-foreach libName [GetLibs] {
-    if { [info commands Init_$libName] eq "" } {
-        ErrorAppend "Library $libName: No Init_$libName command defined." "Warning"
-    } else {
-        Init_$libName $libName [GetLibVersion $libName]
-    }
-}
-
 # Overwrite optional Setup parameters WinCompiler, UserConfiguration and SDK version.
 foreach { libName value } $optWinCompiler {
     SetWinCompiler $libName $value
@@ -6000,6 +6551,14 @@ foreach { libName value } $optUserConfigs {
 }
 foreach { libName value } $optSdkVersions {
     SetSdkVersion $libName $value
+}
+
+foreach libName [GetLibs] {
+    if { [info commands Init_$libName] eq "" } {
+        ErrorAppend "Library $libName: No Init_$libName command defined." "Warning"
+    } else {
+        Init_$libName $libName [GetLibVersion $libName]
+    }
 }
 
 if { $optSortMode eq "none" } {
@@ -6058,15 +6617,29 @@ if { [UseStage "Check"] } {
 }
 
 Log ""
+Log "SetCompilerVersions [GetCompilerVersions]" 1 false
+if { [UseStage "Test"] } {
+    Log "SetStage Test" 1 false
+}
+Log ""
 foreach libName [GetWorkingSet] {
     Log [format "WorkingSet %3d: %s \"%s\" \"%s\"" \
                 [GetLibNumber $libName] \
                 $libName \
                 [GetLibVersion $libName] \
-                [GetCompilerVersion -lib $libName]] 1 false
+                [GetCompilerVersion -lib $libName]] \
+                1 false
 }
 Log ""
-Log "SetCompilerVersions [GetCompilerVersions]" 1 false
+foreach libName [GetWorkingSet] {
+    if { [GetUserConfig $libName] ne "" } {
+        Log [format "UserConfig %3d: %s \"%s\"" \
+                    [GetLibNumber $libName] \
+                    $libName \
+                    [GetUserConfig $libName]] \
+                    1 false
+    }
+}
 Log ""
 
 AddToPathEnv "[GetOutputDevDir]/bin"
@@ -6085,7 +6658,9 @@ foreach libName [GetWorkingSet] {
     if { ! [UseStage "Check"] } {
         Log ""
         Log "Start $libName [GetLibVersion $libName] (Library #[GetLibNumber $libName] of [GetNumLibs])"
-        Log "Build types : $buildTypeList" 2 false
+        if { ! [UseStage "Test"] } {
+            Log "Build types : $buildTypeList" 2 false
+        }
     }
     set buildTime [BuildLib $libName [GetLibVersion $libName] $buildTypeList]
     SetBuildTime $libName $buildTime

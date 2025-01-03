@@ -1,4 +1,4 @@
-# Copyright 2019-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2019-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the Ffidl package.
 # Create an image using standard Tk methods and using the img::raw extension.
@@ -19,20 +19,14 @@ ffidl::typedef Tk_PhotoImageBlock pointer int int int int int int int int
 # bind to tk
 ffidl::callout ffidl-find-photo {pointer pointer-utf8} Tk_PhotoHandle \
     [ffidl::stubsymbol tk stubs 64]; #Tk_FindPhoto
-ffidl::callout ffidl-photo-put-block {Tk_PhotoHandle pointer-byte int int int int} void \
-    [ffidl::stubsymbol tk stubs 246]; #Tk_PhotoPutBlock
-ffidl::callout ffidl-photo-put-zoomed-block {Tk_PhotoHandle pointer-byte int int int int int int int int} void \
-    [ffidl::stubsymbol tk stubs 247]; #Tk_PhotoPutZoomedBlock
+ffidl::callout ffidl-photo-put-block {pointer Tk_PhotoHandle pointer-byte int int int int int} void \
+    [ffidl::stubsymbol tk stubs 266]; #Tk_PhotoPutBlock
 ffidl::callout ffidl-photo-get-image {Tk_PhotoHandle pointer-var} int \
     [ffidl::stubsymbol tk stubs 146]; #Tk_PhotoGetImage
 ffidl::callout ffidl-photo-blank {Tk_PhotoHandle} void \
     [ffidl::stubsymbol tk stubs 147]; #Tk_PhotoBlank
-ffidl::callout ffidl-photo-expand {Tk_PhotoHandle int int} void \
-    [ffidl::stubsymbol tk stubs 148]; #Tk_PhotoExpand
 ffidl::callout ffidl-photo-get-size {Tk_PhotoHandle pointer-var pointer-var} void \
     [ffidl::stubsymbol tk stubs 149]; #Tk_PhotoGetSize
-ffidl::callout ffidl-photo-set-size {Tk_PhotoHandle int int} void \
-    [ffidl::stubsymbol tk stubs 150]; #Tk_PhotoSetSize
 
 # use the ffidl::info format for Tk_PhotoImageBlock to get the fields
 proc ffidl-photo-block-fields {pib} {
@@ -89,9 +83,10 @@ label .p -image p
 label .q -image q
 
 label .msg -text \
-    [format "Using Ffidl %s on %s with Tcl %s-%dbit" \
+    [format "Using Ffidl %s on %s with %dbit Tcl %s and Tk %s" \
     [package version Ffidl] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .p   -row 0 -column 0
 grid .q   -row 0 -column 1
@@ -130,7 +125,7 @@ set qblock [binary format [ffidl::info format Tk_PhotoImageBlock] \
 
 # write our copied pixel data into "q"
 for {set x 16} {$x <= $size} {incr x 16} {
-    ffidl-photo-put-block $qhandle $qblock 0 0 $x $x
+    ffidl-photo-put-block [ffidl::info interp] $qhandle $qblock 0 0 $x $x 0
 }
 
 if { [lindex $argv 0] eq "auto" } {

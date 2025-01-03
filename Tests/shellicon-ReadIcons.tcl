@@ -1,4 +1,4 @@
-# Copyright 2017-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2017-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the shellicon package.
 
@@ -59,9 +59,11 @@ wm title . "shellicon"
 bind . <Escape> { exit }
 
 ttk::label .msg -text \
-    [format "Using shellicon %s on %s with Tcl %s-%dbit" \
+    [format "Using shellicon %s on %s with %dbit Tcl %s and Tk %s" \
     [package version shellicon] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
+
 grid .msg -row $gImgNum -column 0 -columnspan 2
 
 if { $gOpts(Auto) } {

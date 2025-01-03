@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the ukaz package.
 # Create lookup tables and plot the curve.
@@ -29,7 +29,7 @@ proc Plot { plotWidget valList { color green } } {
 proc PointerInfo { x y } {
     global gOpt
 
-    set gOpt(Info1) "[format %.5f $x] -> [format %.5f $y]"
+    set gOpt(Info1) "[format %.3f $x] -> [format %.3f $y]"
 }
 
 proc Click { x y xtr ytr } {
@@ -74,6 +74,10 @@ entry .min   -textvariable gOpt(min)
 entry .max   -textvariable gOpt(max)
 entry .gamma -textvariable gOpt(gamma)
 entry .prec  -textvariable gOpt(prec)
+bind .min   <Key-Return> Redisplay
+bind .max   <Key-Return> Redisplay
+bind .gamma <Key-Return> Redisplay
+bind .prec  <Key-Return> Redisplay
 
 grid .lmin   -row 0 -column 0 -sticky w
 grid .lmax   -row 1 -column 0 -sticky w
@@ -85,9 +89,6 @@ grid .max   -row 1 -column 1 -sticky w
 grid .gamma -row 2 -column 1 -sticky w
 grid .prec  -row 3 -column 1 -sticky w
 
-button .display -text "Redisplay" -command "Redisplay"
-grid .display -row 4 -column 0 -sticky news -columnspan 2
-
 set fontOptions "-family Courier -size 8 -weight normal"
 ukaz::graph .g -font $fontOptions
 bind .g <<MotionEvent>> { PointerInfo {*}%d }
@@ -95,17 +96,19 @@ bind .g <<Click>>       { Click %x %y {*}%d }
 
 bind . <Escape> { exit }
 
-grid .g -row 5 -column 0 -columnspan 2 -sticky news
+grid .g -row 4 -column 0 -columnspan 2 -sticky news
 
 label .info2 -textvariable gOpt(Info2)
 label .info1 -textvariable gOpt(Info1)
-grid .info2 -row 6 -column 0 -sticky w
-grid .info1 -row 6 -column 1 -sticky e
+grid .info2 -row 5 -column 0 -sticky w
+grid .info1 -row 5 -column 1 -sticky e
 
 label .msg -text \
-    [format "Using ukaz %s on %s with Tcl %s-%dbit" \
+    [format "Using ukaz %s on %s with %dbit Tcl %s and Tk %s" \
     [package version ukaz] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
+
 grid .msg -row 7 -column 0 -columnspan 2 -sticky news
 
 grid columnconfigure . 1 -weight 1

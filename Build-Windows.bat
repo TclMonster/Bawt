@@ -3,19 +3,21 @@ setlocal
 
 rem Default values for some often used options.
 set OUTROOTDIR=../BawtBuild
-set TCLKIT=tclkit-win32.exe
 set NUMJOBS=%NUMBER_OF_PROCESSORS%
 
-rem First 4 parameters are mandatory.
+rem First 5 parameters are mandatory.
 if "%1" == "" goto ERROR
 if "%2" == "" goto ERROR
 if "%3" == "" goto ERROR
 if "%4" == "" goto ERROR
+if "%5" == "" goto ERROR
 
-set ARCH=%1
-set COMPILER=%2
-set SETUPFILE=%3
-set ACTION=%4
+set MACHINE=%1
+set BITS=%2
+set COMPILER=%3
+set SETUPFILE=%4
+set ACTION=%5
+shift
 shift
 shift
 shift
@@ -41,6 +43,12 @@ set TARGETS=all
 
 :BUILD
 
+if "%BITS%"=="32" set ARCH=x86
+if "%BITS%"=="64" set ARCH=x64
+if "X%ARCH%"=="X" goto ERROR
+
+if "X%TCLKIT%"=="X" set TCLKIT=tclkit-win32-intel.exe
+
 set ACTION=--%ACTION%
 set BAWTOPTS=--rootdir %OUTROOTDIR% ^
              --architecture %ARCH% ^
@@ -59,14 +67,19 @@ echo Use "clean all" or "complete all" to allow this operation.
 
 :ERROR
 echo.
-echo Usage: %0 Architecture Compiler SetupFile Action [Target1] [TargetN]
-echo   Architecture    : x86 x64
-echo   Compiler        : gcc vs2008 vs2010 vs2013 vs2015 vs2017 vs2019 vs2022
+echo Usage: %0 Machine Bits Compiler SetupFile Action [Target1] [TargetN]
+echo   Machine         : intel
+echo   Bits            : 32 64
+echo   Compiler        : gcc vs2013 vs2015 vs2017 vs2019 vs2022
 echo                     gcc+vs20XX vs20XX+gcc
-echo   Actions         : clean extract configure compile distribute finalize
-echo                     list complete update simulate touch
+echo   Actions         : list clean extract configure compile distribute
+echo                     finalize complete update simulate touch test
 echo   Default target  : all
+echo.
 echo   Output directory: %OUTROOTDIR%
 echo.
-
+echo Specify variable TCLKIT on the command line to use a separate bootstrap program.
+echo   Example:
+echo   set TCLKIT=tclsh ^&^& Build-Windows.bat intel 64 gcc Setup\Tcl_Basic.bawt update
+echo.
 :EOF

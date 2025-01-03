@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2022-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the pawt package.
 # Read and display a FITS 16-bit image file.
@@ -31,9 +31,10 @@ P "Height : [pawt GetImageHeight imgDict]"
 # Determine the minimum and maximum pixel values.
 
 label .msg -text \
-    [format "Using pawt %s on %s with Tcl %s-%dbit" \
+    [format "Using pawt %s on %s with %dbit Tcl %s and Tk %s" \
     [package version pawt] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .img  -row 0 -column 0
 grid .info -row 1 -column 0

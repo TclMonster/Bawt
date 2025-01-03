@@ -1,8 +1,13 @@
 # Builds tools needed for building of libraries, like CMake or SWIG.
 
 # Setup LibName  ZipFile                 BuildFile        BuildOptions
- 
-Setup CMake      CMake-3.21.4.7z         CMake.bawt
+
+if { [UseVisualStudio "primary"] && [GetVisualStudioVersion] <= 2010 } {
+    Setup CMake  CMake-3.21.4.7z         CMake.bawt
+} else {
+    Setup CMake  CMake-3.25.2.7z         CMake.bawt
+}
+Setup pandoc     pandoc-3.5.7z           pandoc.bawt      NoLinux-riscv
 Setup pkgconfig  pkgconfig-0.29.2.7z     pkgconfig.bawt
-Setup SWIG       SWIG-4.1.1.7z           SWIG.bawt
+Setup SWIG       SWIG-4.3.0.7z           SWIG.bawt
 Setup yasm       yasm-1.3.0.7z           yasm.bawt

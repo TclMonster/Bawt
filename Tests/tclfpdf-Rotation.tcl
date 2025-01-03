@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2020-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tclfpdf package.
 # Draw some rotated text strings. 
@@ -24,8 +24,8 @@ tclfpdf::TextWithDirection 110 50 "world!" D
 tclfpdf::Output $fileName
 
 puts ""
-puts [format "Using tclfpdf %s on %s with Tcl %s-%dbit" \
+puts [format "Using tclfpdf %s on %s with %dbit Tcl %s" \
      [package version tclfpdf] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 
 set opts(Verbose) false
 set opts(Auto)    ""
@@ -24,10 +24,38 @@ proc PrintUsage { progName { msg "" } } {
     puts ""
 }
 
+proc SkipTest { testFile } {
+    set skipList [list \
+        "tls-KeyTest1.tcl" \
+        "tls-KeyTest2.tcl" \
+    ]
+    set skipFlag [expr [lsearch $skipList $testFile] >= 0]
+    return $skipFlag
+}
+
+proc IgnoreForTcl9 { testFile } {
+    set ignList [list \
+    ]
+    set ignFlag false
+    if { [lindex [split [info tclversion] "."] 0] >= 9 } {
+        set ignFlag [expr [lsearch $ignList $testFile] >= 0]
+    }
+    return $ignFlag
+}
+
 proc RunTest { testFile } {
     global opts
 
+    if { [SkipTest $testFile] } {
+        puts "Test $testFile skipped"
+        return
+    }
+    if { [IgnoreForTcl9 $testFile] } {
+        puts "Test $testFile ignored for Tcl9"
+        return
+    }
     puts "Running test $testFile ..."
+
     if { $opts(Auto) ne "" } {
         set catchVal [catch {exec -ignorestderr $::tclExe $testFile $opts(Auto) 2>@1 } retVal optionsDict]
     } else {
@@ -80,14 +108,10 @@ while { $curArg < $argc } {
 set tclExe [info nameofexecutable]
 
 if { [llength $useFileList] == 0 } {
-    set useFileList [lsort -dictionary [glob "*.tcl"]]
+    set useFileList [lsort -dictionary [glob -nocomplain "*.tcl"]]
 }
 
 foreach f $useFileList {
-    if { [string match "tls-*" $f] } {
-        puts "Skipping test $f"
-        continue
-    }
     RunTest $f
 }
 

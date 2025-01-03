@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2022-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the fitsTcl package.
 # Generate and write a 16-bit FITS image file.
@@ -146,9 +146,10 @@ set maxVal [lindex $sortedList end]
 PI "Value range  : $minVal $maxVal\n"
 
 label .msg -text \
-    [format "Using fitstcl %s on %s with Tcl %s-%dbit" \
+    [format "Using fitstcl %s on %s with %dbit Tcl %s and Tk %s" \
     [package version fitstcl] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .imgOut  -row 0 -column 0
 grid .infoOut -row 1 -column 0

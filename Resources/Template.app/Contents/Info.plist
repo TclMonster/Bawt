@@ -386,9 +386,9 @@
 	<key>CFBundleVersion</key>
 	<string>@PRODUCTVERSION@</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.5.0</string>
+	<string>11.0.0</string>
 	<key>LSRequiresCarbon</key>
-	<true/>
+	<false/>
 	<key>NSAppleScriptEnabled</key>
 	<false/>
 	<key>NSHumanReadableCopyright</key>

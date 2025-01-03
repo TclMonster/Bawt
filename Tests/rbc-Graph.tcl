@@ -1,4 +1,4 @@
-# Copyright 2019-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2019-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the rbc package.
 # Slightly modified version of demo program found at:
@@ -69,9 +69,10 @@ pack .l
 
 bind . <Escape> { exit }
 .l configure -text \
-    [format "Using rbc %s on %s with Tcl %s-%dbit" \
+    [format "Using rbc %s on %s with %dbit Tcl %s and Tk %s" \
     [package version rbc] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 if { [lindex $argv 0] eq "auto" } {
     update

@@ -122,8 +122,8 @@ for {set i 99} {$i>0} {} {
 }
 
 puts ""
-puts [format "Using Expect %s on %s with Tcl %s-%dbit" \
+puts [format "Using Expect %s on %s with %dbit Tcl %s" \
      [package version Expect] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

@@ -1,4 +1,4 @@
-# Builds all libraries supported by BAWT. 
+# Builds all libraries supported by BAWT.
 # This setup is for testing purposes only.
 
 Include "Tools.bawt"

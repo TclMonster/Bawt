@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the imgtools package.
 # Load a Targa image, rotate and scale it several times.
@@ -19,9 +19,10 @@ ttk::label .orig -image phImgOrig
 ttk::label .rot  -image phImgRot
 
 ttk::label .msg -text \
-    [format "Using photoresize %s on %s with Tcl %s-%dbit" \
+    [format "Using photoresize %s on %s with %dbit Tcl %s and Tk %s" \
     [package version photoresize] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .orig -row 0 -column 0
 grid .rot  -row 0 -column 1

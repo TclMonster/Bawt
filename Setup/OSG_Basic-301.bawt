@@ -5,7 +5,7 @@
 # Setup libName               zipFile                           scriptFile              buildTypes
 
 # Tools needed for compilation of libraries.
-Setup CMake                   CMake-3.14.5.7z                   CMake.bawt      
+Setup CMake                   CMake-3.14.5.7z                   CMake.bawt
 
 # The following libraries can be compiled on Linux, but for OpenSceneGraph
 # we use the libraries installed by the Linux distribution.
@@ -34,9 +34,9 @@ Setup curl                    curl-7.54.1.7z                    curl.bawt
 
 # OpenSceneGraph library and data.
 Setup OpenSceneGraph          OpenSceneGraph-3.0.1.7z           OpenSceneGraph.bawt     MaxParallel=Windows-gcc:1
-Setup OpenSceneGraphData      OpenSceneGraphData-3.0.1.7z       OpenSceneGraphData.bawt 
+Setup OpenSceneGraphData      OpenSceneGraphData-3.0.1.7z       OpenSceneGraphData.bawt
 
 # OpenSceneGraph distribution as InnoSetup installer.
-Setup InnoSetup               InnoSetup-6.2.0.7z                InnoSetup.bawt
+Setup InnoSetup               InnoSetup-6.2.2.7z                InnoSetup.bawt
 Setup Redistributables        Redistributables.7z               Redistributables.bawt
 Setup SetupOsg                SetupOsg.7z                       SetupOsg.bawt

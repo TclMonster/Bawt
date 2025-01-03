@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tkpath package.
 # Slightly modified tktable example basic.tcl.
@@ -41,9 +41,10 @@ scrollbar .sy -command [list $table(table) yview]
 scrollbar .sx -command [list $table(table) xview] -orient horizontal
 
 ttk::label .msg -text \
-    [format "Using Tktable %s on %s with Tcl %s-%dbit" \
+    [format "Using Tktable %s on %s with %dbit Tcl %s and Tk %s" \
     [package version Tktable] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]] 
 
 grid .label - -sticky ew
 grid $table(table) .sy -sticky news

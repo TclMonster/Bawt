@@ -93,9 +93,10 @@ proc drawGUI {} {
     enableDnD [list $f.b1 $f.b2 $f.b3 $f.b4]
 
     pack [wrap label $f.msg -text \
-        [format "Using BWidget %s on %s with Tcl %s-%dbit" \
+        [format "Using BWidget %s on %s with %dbit Tcl %s and Tk %s" \
         [package version BWidget] $::tcl_platform(os) \
-        [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]]
+        [expr $::tcl_platform(pointerSize) * 8] \
+        [info patchlevel] [package version Tk]]]
 
     bind $t <Escape> { exit }
 }

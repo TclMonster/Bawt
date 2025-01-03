@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the shtmlview package.
 # Read a simple HTML file.
@@ -13,9 +13,10 @@ shtmlview::shtmlview .html -toolbar true
 .html browse $htmlFile
 
 label .msg -text \
-    [format "Using shtmlview %s on %s with Tcl %s-%dbit" \
+    [format "Using shtmlview %s on %s with %dbit Tcl %s and Tk %s" \
     [package version shtmlview::shtmlview] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .html -row 0 -column 0
 grid .msg  -row 1 -column 0

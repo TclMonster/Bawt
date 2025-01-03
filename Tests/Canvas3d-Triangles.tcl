@@ -224,9 +224,10 @@ set ::light_id [.win create light {0.0 200.0 200.0}]
 update
 
 puts \
-    [format "Using Canvas3d %s on %s with Tcl %s-%dbit" \
+    [format "Using Canvas3d %s on %s with %dbit Tcl %s and Tk %s" \
     [package version Canvas3d] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 lookat
 rotate

@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the Tkhtml package.
 # Read a simple HTML file.
@@ -17,9 +17,10 @@ html .html
 .html parse -final $data
 
 label .msg -text \
-    [format "Using Tkhtml %s on %s with Tcl %s-%dbit" \
+    [format "Using Tkhtml %s on %s with %dbit Tcl %s and Tk %s" \
     [package version Tkhtml] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .html -row 0 -column 0
 grid .msg  -row 1 -column 0

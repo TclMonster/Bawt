@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tzint package.
 # Generate QR image and display it on a label.
@@ -20,9 +20,10 @@ label .l -image $img
 label .li -text "$msg encoded as QR"
 
 label .msg -text \
-    [format "Using tzint %s on %s with Tcl %s-%dbit" \
+    [format "Using tzint %s on %s with %dbit Tcl %s and Tk %s" \
     [package version tzint] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 pack .l .li .msg -expand 1 -fill x
 

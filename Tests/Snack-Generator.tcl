@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2022-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the Snack package.
 # Slightly modified version of Snack demo program generator.tcl.
@@ -68,9 +68,10 @@ Config
 
 bind . <Escape> { exit }
 .l configure -text \
-    [format "Using Snack %s on %s with Tcl %s-%dbit" \
+    [format "Using Snack %s on %s with %dbit Tcl %s and Tk %s" \
     [package version snack] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 if { [lindex $argv 0] eq "auto" } {
     Play

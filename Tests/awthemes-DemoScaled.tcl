@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2020-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the awthemes package.
 # Slightly modified version of awthemes demo program demoscaled.tcl.
@@ -210,9 +210,10 @@ proc main { } {
   grid $vars(mainW).lfSmall -row 0 -column 1
   grid $vars(mainW).msg     -row 1 -column 0 -columnspan 2
   $vars(mainW).msg configure -text \
-    [format "Using awthemes %s on %s with Tcl %s-%dbit" \
+    [format "Using awthemes %s on %s with %dbit Tcl %s and Tk %s" \
     [package version awthemes] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
   bind $vars(mainW) <Escape> { exit }
   focus $vars(mainW)

@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the nacl package.
 # Generate a hash and some random numbers.
@@ -14,8 +14,8 @@ binary scan $randomNumbers "c10" randomList
 puts "Random numbers  : $randomList"
 
 puts ""
-puts [format "Using nacl %s on %s with Tcl %s-%dbit" \
+puts [format "Using nacl %s on %s with %dbit Tcl %s" \
      [package version nacl] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

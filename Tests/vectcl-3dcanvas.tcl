@@ -81,9 +81,10 @@ ttk::scale .chi -variable chi -from 0.0 -to 6.28 -command updatePlot
 ttk::scale .psi -variable psi -from 0.0 -to 6.28 -command updatePlot
 
 label .msg -text \
-    [format "Using vectcl %s on %s with Tcl %s-%dbit" \
+    [format "Using vectcl %s on %s with %dbit Tcl %s and Tk %s" \
     [package version vectcl] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 set s 100.0
 set phi 0.5

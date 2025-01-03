@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the Img package.
 # Create an image using standard Tk methods and using the img::raw extension.
@@ -23,9 +23,10 @@ set img2 [image create photo -width $w -height $h]
 label .l2 -image $img2
 
 label .msg -text \
-    [format "Using img::raw %s on %s with Tcl %s-%dbit" \
+    [format "Using img::raw %s on %s with %dbit Tcl %s and Tk %s" \
     [package version img::raw] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 grid .l1  -row 0 -column 0
 grid .l2  -row 0 -column 1

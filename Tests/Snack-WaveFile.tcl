@@ -1,4 +1,4 @@
-# # Copyright 2022-2023 Paul Obermeier (obermeier@tcl3d.org)
+# # Copyright 2022-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the Snack package playing WAV files.
 #
@@ -672,9 +672,9 @@ proc CreateWindow {} {
     togl .fr.toglwin -width $::gDemo(winWidth) -height $::gDemo(winHeight) \
                      -swapinterval 1 \
                      -double true -depth true \
-                     -createproc  CreateCallback \
-                     -reshapeproc ReshapeCallback \
-                     -displayproc DisplayCallback 
+                     -createcommand  CreateCallback \
+                     -reshapecommand ReshapeCallback \
+                     -displaycommand DisplayCallback 
     grid .fr.toglwin -row 0 -column 0 -sticky news
 
     label .fr.l
@@ -708,9 +708,10 @@ ResetObjects
 TimerInit
 
 .fr.l configure -text \
-    [format "Using Snack %s on %s with Tcl %s-%dbit" \
+    [format "Using Snack %s on %s with %dbit Tcl %s and Tk %s" \
     [package version snack] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 update
 

@@ -1,0 +1,33 @@
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
+#
+# Test program for the Thread package.
+# Simply send data back and forth between two threads.
+# Implements procedure to be used by Thread-Run.tcl
+#
+# Slightly modified example from 
+# https://wiki.tcl-lang.org/page/two+threads+run+synchronously
+
+proc run { type } {
+    # First wait for the other thread's ID.
+    vwait other
+
+    # Now compute, send and wait.
+    set time 0
+    while { $time < 5 } {
+        incr time
+
+        if { $type == 1 } {
+            set value $time
+        } else {
+            set value [expr {2 * $time}]
+        }
+
+        ::thread::send -async $::other [list set ::other_value $value]
+
+        puts "$type: Sent $value"
+        vwait other_value
+        puts "$type -> $value -> $::other_value"
+    }
+    ::thread::exit
+}
+

@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2021-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the apave package.
 # Slightly modified apave test program test0_pave.tcl.
@@ -7,9 +7,10 @@ package require Tk
 package require apave
 
 set msg \
-    [format "Using apave %s on %s with Tcl %s-%dbit" \
+    [format "Using apave %s on %s with %dbit Tcl %s and Tk %s" \
     [package version apave] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 apave::initWM
 apave::APave create pave

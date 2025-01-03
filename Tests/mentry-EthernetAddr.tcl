@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2020-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the mentry package.
 # Slightly modified version of mentry demo program ethernetaddr_tile.tcl.
@@ -180,9 +180,11 @@ ttk::separator .base.sep -orient horizontal
 ttk::label .base.msg
 
 .base.msg configure -text \
-    [format "Using mentry %s on %s with Tcl %s-%dbit" \
+    [format "Using mentry %s on %s with %dbit Tcl %s and Tk %s" \
     [package version mentry] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
+
 bind . <Escape> { exit }
 
 #

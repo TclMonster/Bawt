@@ -1,4 +1,4 @@
-# Copyright 2019-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2019-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the MaterialIcons package.
 # Slightly modified version of MaterialIcons demo program show.tcl.
@@ -80,9 +80,10 @@ showicons
 
 bind . <Escape> { exit }
 .msg configure -text \
-    [format "Using MaterialIcons %s on %s with Tcl %s-%dbit" \
+    [format "Using MaterialIcons %s on %s with %dbit Tcl %s and Tk %s" \
     [package version MaterialIcons] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 if { [lindex $argv 0] eq "auto" } {
     update

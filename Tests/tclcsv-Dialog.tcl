@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2020-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tclcsv package.
 # Slightly modified version of tclcsv example program:
@@ -15,9 +15,10 @@ ttk::label .msg
 pack .msg
 
 .msg configure -text \
-    [format "Using tclcsv %s on %s with Tcl %s-%dbit" \
+    [format "Using tclcsv %s on %s with %dbit Tcl %s and Tk %s" \
     [package version tclcsv] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 widget::dialog .dlg -type okcancel
 tclcsv::dialectpicker .dlg.csv $testFile

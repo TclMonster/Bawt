@@ -1,4 +1,4 @@
-# Copyright 2019-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2019-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the nsf-XOTcl package.
 
@@ -21,8 +21,8 @@ g say_hello
 g say_bye
 
 puts ""
-puts [format "Using nsf-XOTcl %s on %s with Tcl %s-%dbit" \
+puts [format "Using nsf-XOTcl %s on %s with %dbit Tcl %s" \
      [package version XOTcl] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

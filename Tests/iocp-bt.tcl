@@ -1,4 +1,4 @@
-# # Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# # Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the iocp package.
 # Detect Bluetooth radios and devices.
@@ -40,8 +40,8 @@ if { [llength $addressList] > 0 } {
 }
 
 puts ""
-puts [format "Using iocp %s on %s with Tcl %s-%dbit" \
+puts [format "Using iocp %s on %s with %dbit Tcl %s" \
      [package version iocp] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

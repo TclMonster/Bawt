@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the tablelist and tkdnd packages.
 # Generate 2 tablelists acting as drag and drop sources.
@@ -201,9 +201,10 @@ Reset $dragTable $dropTable $numRows $numCols
 
 bind . <Escape> { exit }
 .msg configure -text \
-    [format "Using tablelist %s and tkdnd %s on %s with Tcl %s-%dbit" \
+    [format "Using tablelist %s and tkdnd %s on %s with %dbit Tcl %s and Tk %s" \
     [package version tablelist] [package version tkdnd] $::tcl_platform(os) \
-    [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+    [expr $::tcl_platform(pointerSize) * 8] \
+    [info patchlevel] [package version Tk]]
 
 if { [lindex $argv 0] eq "auto" } {
     update

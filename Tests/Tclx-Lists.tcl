@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Paul Obermeier (obermeier@tcl3d.org)
+# Copyright 2016-2024 Paul Obermeier (obermeier@tcl3d.org)
 #
 # Test program for the TclX package.
 # List handling functionality in pure Tcl and with the corresponding TclX procedures.
@@ -27,8 +27,8 @@ puts "lrmdups with Tcl : $lrmTcl"
 puts "lrmdups with TclX: $lrmTclX"
 
 puts ""
-puts [format "Using TclX %s on %s with Tcl %s-%dbit" \
+puts [format "Using TclX %s on %s with %dbit Tcl %s" \
      [package version Tclx] $::tcl_platform(os) \
-     [info patchlevel] [expr $::tcl_platform(pointerSize) * 8]]
+     [expr $::tcl_platform(pointerSize) * 8]  [info patchlevel]]
 
 exit

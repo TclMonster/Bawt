@@ -69,7 +69,7 @@ BEGIN
             VALUE "FileDescription", "Tclkit, a standalone runtime for Tcl/Tk\0"
             VALUE "OriginalFilename", "tclkit.exe\0"
             VALUE "CompanyName", "poSoft, Paul Obermeier's Portable Software\0"
-            VALUE "LegalCopyright", "© 1999-2023 by Paul Obermeier\0"
+            VALUE "LegalCopyright", "\251 1999-2024 by Paul Obermeier\0"
 #ifdef TCLKIT_WITH_TK
             VALUE "FileVersion", TK_PATCH_LEVEL
             VALUE "ProductName", "Tclkit " TK_VERSION " for Windows\0"

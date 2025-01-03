@@ -10,6 +10,6 @@ Include "OSG_Extended.bawt"
 # Setup LibName         ZipFile              BuildFile              BuildOptions
 
 # OpenSceneGraph distribution as InnoSetup installer.
-Setup InnoSetup         InnoSetup-6.2.0.7z   InnoSetup.bawt
+Setup InnoSetup         InnoSetup-6.2.2.7z   InnoSetup.bawt
 Setup Redistributables  Redistributables.7z  Redistributables.bawt
 Setup SetupOsg          SetupOsg.7z          SetupOsg.bawt
